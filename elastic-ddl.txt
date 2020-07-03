@@ -1,0 +1,381 @@
+## Gestion des index
+### 1.1 Autocréation d’index
+
+// tag::ddl-11-CreateIndexWithDataInjection[]
+POST tp_elastic_11/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{ "app_name" : "YouTube Kids", "category" : "FAMILY", "last_updated" : "2018-08-02", "rating" : 4.5}
+{ "index": { "_id": 3 }}
+{ "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
+{ "index": { "_id": 4 }}
+{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
+{ "index": { "_id": 5 }}
+{ "app_name" : "QR Code Reader", "category" : "TOOLS", "last_updated" : "2016-03-15", "rating" : 4.0}
+{ "index": { "_id": 6 }}
+{ "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
+// end::ddl-11-CreateIndexWithDataInjection[]
+
+
+
+// tag::ddl-11-DisplayIndexCaracteristicsQuery[]
+GET /tp_elastic_11
+// end::ddl-11-DisplayIndexCaracteristicsQuery[]
+
+// tag::ddl-11-DisplayIndexCaracteristicsOutput[]
+{
+  "tp_elastic_11" : {
+    "aliases" : { },
+    "mappings" : {
+      "_doc" : {
+        "properties" : {
+          "app_name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "category" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "last_updated" : {
+            "type" : "date"
+          },
+          "rating" : {
+            "type" : "float"
+          }
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "creation_date" : "1552820707231",
+        "number_of_shards" : "5",
+        "number_of_replicas" : "1",
+        "uuid" : "9su2-VrDSkuIY0eBtEB55A",
+        "version" : {
+          "created" : "6060099"
+        },
+        "provided_name" : "tp_elastic_11"
+      }
+    }
+  }
+}
+// end::ddl-11-DisplayIndexCaracteristicsOutput[]
+
+
+
+// tag::ddl-12-createTemplate[]
+PUT /_template/template_tp_elastic
+{
+  "index_patterns": ["tp_*"],
+  "settings":
+  {
+    "number_of_shards" : 1,
+    "number_of_replicas" : 0
+  }
+}
+// end::ddl-12-createTemplate[]
+
+
+
+### 1.3 Creation d’un index sur la base d’un template
+
+Créer un index par injection de données avec le POST ci-dessous. L’index créé devrait logiquement avoir les caractéristiques définies dans le template
+
+
+// tag::ddl-13-createIndexFromTemplate[]
+POST /tp_elastic_13/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{ "app_name" : "YouTube Kids", "category" : "FAMILY", "last_updated" : "2018-08-02", "rating" : 4.5}
+{ "index": { "_id": 3 }}
+{ "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
+{ "index": { "_id": 4 }}
+{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
+{ "index": { "_id": 5 }}
+{ "app_name" : "QR Code Reader", "category" : "TOOLS", "last_updated" : "2016-03-15", "rating" : 4.0}
+{ "index": { "_id": 6 }}
+{ "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
+// end::ddl-13-createIndexFromTemplate[]
+
+
+// tag::ddl-13-DisplayIndexCaracteristicsQuery[]
+GET /tp_elastic_13
+// end::ddl-13-DisplayIndexCaracteristicsQuery[]
+
+
+
+// tag::ddl-13-DisplayIndexCaracteristicsOutput[]
+{
+  "tp_elastic_13" : {
+    "aliases" : { },
+    "mappings" : {
+      "_doc" : {
+        "properties" : {
+          "app_name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "category" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "last_updated" : {
+            "type" : "date"
+          },
+          "rating" : {
+            "type" : "float"
+          }
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "creation_date" : "1552152736309",
+        "number_of_shards" : "1",
+        "number_of_replicas" : "0",
+        "uuid" : "0y7MR1CVQnOs3NgQiZFGUA",
+        "version" : {
+          "created" : "6060099"
+        },
+        "provided_name" : "tp_elastic_13"
+      }
+    }
+  }
+}
+// end::ddl-13-DisplayIndexCaracteristicsOutput[]
+
+
+### 1.4 Création Index avec mapping personnalisé
+
+// tag::ddl-14-createIndexCustom[]
+PUT /tp_elastic_14
+{
+  "mappings":
+  {
+      "properties":
+      {
+        "app_name" : {"type": "text"},
+        "category" : {"type": "keyword"},
+        "last_updated" : {"type": "date"},
+        "rating" : {"type": "double"}
+      }
+  }
+}
+// end::ddl-14-createIndexCustom[]
+
+Indexer les données avec la requête REST ci-dessous
+
+// tag::ddl-14-loadData[]
+POST /tp_elastic_14/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{ "app_name" : "YouTube Kids", "category" : "FAMILY", "last_updated" : "2018-08-02", "rating" : 4.5}
+{ "index": { "_id": 3 }}
+{ "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
+{ "index": { "_id": 4 }}
+{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
+{ "index": { "_id": 5 }}
+{ "app_name" : "QR Code Reader", "category" : "TOOLS", "last_updated" : "2016-03-15", "rating" : 4.0}
+{ "index": { "_id": 6 }}
+{ "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
+// end::ddl-14-loadData[]
+
+// tag::ddl-14-DisplayIndexCaracteristicsQuery[]
+GET /tp_elastic_14
+// end::ddl-14-DisplayIndexCaracteristicsQuery[]
+
+// tag::ddl-14-DisplayIndexCaracteristicsOutput[]
+{
+  "tp_elastic_14" : {
+    "aliases" : { },
+    "mappings" : {
+      "_doc" : {
+        "properties" : {
+          "app_name" : {
+            "type" : "text"
+          },
+          "category" : {
+            "type" : "keyword"
+          },
+          "last_updated" : {
+            "type" : "date"
+          },
+          "rating" : {
+            "type" : "double"
+          }
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "creation_date" : "1552152453624",
+        "number_of_shards" : "1",
+        "number_of_replicas" : "0",
+        "uuid" : "9tX0PEOjQpGXXGEbjPSroQ",
+        "version" : {
+          "created" : "6060099"
+        },
+        "provided_name" : "tp_elastic_14"
+      }
+    }
+  }
+}
+// end::ddl-14-DisplayIndexCaracteristicsOutput[]
+
+
+### 1.5 Gestion Alias
+
+
+###### Créer un premier index en mode autocréation avec la requête ci-dessous
+
+// tag::ddl-15-createIndex[]
+POST /tp_elastic_151/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{ "app_name" : "YouTube Kids", "category" : "FAMILY", "last_updated" : "2018-08-02", "rating" : 4.5}
+{ "index": { "_id": 3 }}
+{ "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
+{ "index": { "_id": 4 }}
+{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
+// end::ddl-15-createIndex[]
+
+###### Créer un alias vers le 1er index
+
+* Nom alias : tp_elastic_15
+* Pointant vers l'index tp_elastic_151
+
+// tag::ddl-15-createFirstAlias[]
+POST /_aliases
+{
+    "actions" : 
+    [
+        { 
+          "add" : { "index" : "tp_elastic_151", "alias" : "tp_elastic_15" }
+        }
+    ]
+}
+// end::ddl-15-createFirstAlias[]
+
+// tag::ddl-15-testRead[]
+GET /tp_elastic_15/_doc/1
+// end::ddl-15-testRead[]
+
+###### Tester-le en écriture sur l'alias
+
+// tag::ddl-15-testWrite[]
+PUT /tp_elastic_15/_doc/5
+{
+    "app_name": "QR Code Reader",
+    "category" : "TOOLS",
+     "last_updated" : "2016-03-15",
+     "rating" : 4.0
+}
+// end::ddl-15-testWrite[]
+
+// tag::ddl-15-createSecondAlias[]
+POST /tp_elastic_152/_bulk
+{ "index": { "_id": 6 }}
+{ "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
+// end::ddl-15-createSecondAlias[]
+
+###### Faire pointer l’alias vers les 2 index avec
+
+// tag::ddl-15-redirectIndexOnAliases[]
+POST /_aliases
+{
+   "actions" : [
+      { "add" : { "index" : "tp_elastic_151", "alias" : "tp_elastic_15" }},
+      { "add" : { "index" : "tp_elastic_152", "alias" : "tp_elastic_15","is_write_index":true}}
+    ]
+}
+// end::ddl-15-redirectIndexOnAliases[]
+
+###### Lister les alias
+
+// tag::ddl-15-listAlias[]
+GET /_alias/tp_elastic_15
+// end::ddl-15-listAlias[]
+
+###### Tester l'écriture sur l'alias (qui maintenant pointe sur deux index) avec la requête POST ci-dessous
+
+// tag::ddl-15-testWriteOnMultiAlias[]
+PUT /tp_elastic_15/_doc/7
+{
+    "app_name": "Q Remote Control",
+    "category" : "TOOLS",
+     "last_updated" : "2014-07-11",
+     "rating" : 3.8
+}
+// end::ddl-15-testWriteOnMultiAlias[]
+
+###### Compter les données
+
+// tag::ddl-15-countAllData[]
+GET /tp_elastic_15/_count
+// end::ddl-15-countAllData[]
+
+* Dans le premier index
+
+// tag::ddl-15-countDataOnFirstIndex[]
+GET /tp_elastic_151/_count
+// end::ddl-15-countDataOnFirstIndex[]
+
+* Dans le deuxième index
+
+// tag::ddl-15-countDataOnSecondIndex[]
+GET /tp_elastic_152/_count
+// end::ddl-15-countDataOnSecondIndex[]
+
+###### Supprimer les alias
+
+// tag::ddl-15-deleteAlias[]
+DELETE /tp_elastic_15*/_alias/tp_elastic_15
+// end::ddl-15-deleteAlias[]
+
+###### Vérifier qu’ils ont bien été supprimés.
+
+// tag::ddl-15-controlAliasDeletion[]
+HEAD /_alias/tp_elastic_15
+// end::ddl-15-controlAliasDeletion[]
+
+
+### 1.6 Suppression index
+
+
+###### Supprimer l’index tp_elastic_152
+
+// tag::ddl-16-deleteIndex[]
+DELETE /tp_elastic_152
+// end::ddl-16-deleteIndex[]
+
+###### Vérifier qu’il l’a bien été en testant son existence 
+
+// tag::ddl-16-ControlIndexDeletion[]
+HEAD /tp_elastic_152
+// end::ddl-16-ControlIndexDeletion[]
+
