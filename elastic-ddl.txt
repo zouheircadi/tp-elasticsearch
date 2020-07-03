@@ -379,3 +379,29 @@ DELETE /tp_elastic_152
 HEAD /tp_elastic_152
 // end::ddl-16-ControlIndexDeletion[]
 
+
+// tag::ddl-17-modifySettingsPrepareLoading[]
+PUT /tp_elastic_17/_settings
+{
+  "index":
+    {
+      "refresh_interval": "-1",
+      "number_of_replicas" : 0
+
+  }
+}
+// end::ddl-17-modifySettingsPrepareLoading[]
+
+
+// tag::ddl-17-rollbackSettingsToProdMode[]
+PUT /tp_elastic_17/_settings
+{
+  "index":
+    {
+      "refresh_interval": "30s",
+      "number_of_replicas" : 2
+
+  }
+}
+// end::ddl-17-rollbackSettingsToProdMode[]
+
