@@ -38,8 +38,10 @@ POST tp_elastic_11/_bulk
 
 
 [comment]: # tag::parse[] 
+
 doc = (options[:parse] == false ? (Document.new lines, options) :
     (Document.new lines,options).parse)
 timings.record :parse if timings
 doc
+
 [comment]: #  end::parse[]
