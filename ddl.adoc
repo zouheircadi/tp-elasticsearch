@@ -36,9 +36,28 @@ POST tp_elastic_11/_bulk
 // end::createtpelastic11[]
 
 
-// tag::parse[] 
+// tag::parse[]
+Separator = Double slash
 doc = (options[:parse] == false ? (Document.new lines, options) :
     (Document.new lines,options).parse)
 timings.record :parse if timings
 doc
 // end::parse[]
+
+
+<!-- tag::parse[] -->
+Separator = HTML comment
+doc = (options[:parse] == false ? (Document.new lines, options) :
+    (Document.new lines,options).parse)
+timings.record :parse if timings
+doc
+<!-- end::parse[] -->
+
+
+# tag::parse[]
+Separator = DIESE
+doc = (options[:parse] == false ? (Document.new lines, options) :
+    (Document.new lines,options).parse)
+timings.record :parse if timings
+doc
+# end::parse[]
