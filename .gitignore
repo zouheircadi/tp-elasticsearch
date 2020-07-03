@@ -1,2 +1,2 @@
-*.agdai
-MAlonzo/**
+# MacOs
+.DS_Store
