@@ -20,7 +20,7 @@ POST tp_elastic_11/_bulk
 { "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
 // end::snippet-a[]
 
-# tag::createtpelastic11[]
+// tag::createtpelastic11[]
 
 POST tp_elastic_11/_bulk
 { "index": { "_id": 1 }}
