@@ -36,3 +36,10 @@ POST tp_elastic_11/_bulk
 { "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
 // end::createtpelastic11[]
 
+
+# tag::parse[] 
+doc = (options[:parse] == false ? (Document.new lines, options) :
+    (Document.new lines,options).parse)
+timings.record :parse if timings
+doc
+# end::parse[]
