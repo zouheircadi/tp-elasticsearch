@@ -37,9 +37,9 @@ POST tp_elastic_11/_bulk
 // end::createtpelastic11[]
 
 
-// tag::parse[] 
+[comment]: # tag::parse[] 
 doc = (options[:parse] == false ? (Document.new lines, options) :
     (Document.new lines,options).parse)
 timings.record :parse if timings
 doc
-// end::parse[]
+[comment]: #  end::parse[]
