@@ -1,0 +1,332 @@
+## Les filtres (recherches structurées)
+### Recherche basique de type filtre
+
+
+###### Trouver le document dont la category est exactement "ART-AND-DESIGN"
+
+Les trois requêtes ci-dessous de type filtre ne retournent aucun résultat
+* constant score query
+
+// tag::dml-211-filterQueryConstantScore[]
+GET /tp_elastic_11/_search
+{
+    "query" : {
+        "constant_score" : {
+          "filter":
+          {
+            "term": {
+              "category" :"ART-AND-DESIGN"
+            }
+          }
+        }
+    }
+}
+// end::dml-211-filterQueryConstantScore[]
+
+* boolean query
+
+// tag::dml-211-filterQueryBoolean[]
+GET /tp_elastic_11/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "filter":
+      {
+        "term": {
+          "category": "ART-AND-DESIGN"
+        }
+      }
+    }
+  }
+}
+// end::dml-211-filterQueryBoolean[]
+
+* boolean mixte query
+
+
+// tag::dml-211-filterQueryMixed[]
+GET /tp_elastic_11/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {"match_all": {}}
+      ],
+      "filter":
+      {
+        "term": {
+          "category": "ART-AND-DESIGN"
+        }
+      }
+    }
+  }
+}
+// end::dml-211-filterQueryMixed[]
+
+
+###### Pour quelle raison  ?
+
+* on vérifie dans un premier temps que l'index contient bien des données
+
+// tag::dml-211-seachAllQuery[]
+GET /tp_elastic_11/_search
+// end::dml-211-seachAllQuery[]
+
+* On utilise ensuite le endPoint _analyze pour voir comment est indexé le champ
+
+
+// tag::dml-211-analyzeCategoryField[]
+GET /tp_elastic_11/_analyze
+{
+  "field" : "category",
+  "text" : "ART-AND-DESIGN"
+}
+// end::dml-211-analyzeCategoryField[]
+
+L'API analyse nous indique que le champ n'est pas indexé tel quel. Il est tokenisé sur le tiret. Il n'est donc pas possible de le trouver
+
+Si on effectue le même test sur le champ category.keyword, on constate que le contenu du champ est indexé tel quel
+
+// tag::dml-211-analyzeCategoryKeywordField[]
+GET /tp_elastic_11/_analyze
+{
+  "field" : "category.keyword",
+  "text" : "ART-AND-DESIGN"
+}
+// end::dml-211-analyzeCategoryKeywordField[]
+
+
+###### Quelle(s) solution(s) peut-on envisager pour remédier à cette situation ?
+
+* index tp_elastic_11
+    * Lorsqu'on utilise le "mapping automatique", tout champ de type texte est indexé de deux manières
+        * Indexation de type text => Le champ est analysé
+        * Indexation de type keyword => Le champ n'est pas analysé. Il est indexé sans aucune modification.
+    * Pour l'index tp_elastic_11, on peut donc interroger le champ category.keyword
+
+
+
+
+
+// tag::dml-211-tpElastic11FilterQueryArtAndDesign[]
+GET /tp_elastic_11/_search
+{
+    "query" : {
+        "constant_score" : {
+          "filter":
+          {
+            "term": {
+              "category.keyword" :"ART-AND-DESIGN"
+            }
+          }
+        }
+    }
+}
+// end::dml-211-tpElastic11FilterQueryArtAndDesign[]
+
+* Pour l'index tp_elastic_14, on peut interroger le champ category pour lequel on a fixé le mapping
+
+// tag::dml-211-tpElastic14FilterQueryArtAndDesign[]
+GET /tp_elastic_14/_search
+{
+    "query" : {
+        "constant_score" : {
+          "filter":
+          {
+            "term": {
+              "category" :"ART-AND-DESIGN"
+            }
+          }
+        }
+    }
+}
+// end::dml-211-tpElastic14FilterQueryArtAndDesign[]
+
+* Lorsqu'on met en place des filtres
+    * pour les chaines de caractère
+        * Il faut bien penser aux effets de bord des typâges qui modifient les chaînes stockées (type text et ses dérivés)
+        * le type keyword est adapté **dans l'hypothèse ou on veut être sûr que la saisie utilisateur doit être strictement identique à ce qui est stocké dans l'index**.
+    * Les types primitifs (integer, long, float,double ...) et le type date n'exigent pas de configuration particulière hormis le typage par défaut.
+
+
+### Recherches basiques de type filtre - 2
+
+
+###### Données à charger avec les devTools Kibana
+// tag::dml-filters-212-testCase[]
+POST tp_elastic_filter/_doc/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Photo Editor & Candy Camera & Grid & ScrapBook", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN","price" : 0.0, "last_updated" : "2018-01-06T23:00:00.000Z", "content_rating" : "Everyone","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{ "app_name" : "Pixel Draw - Number Art Coloring Book", "type" : "Free", "genres" : "Art & Design;Creativity", "category" : "ART_AND_DESIGN",           "price" : 0.0, "last_updated" : "2018-06-19T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.3}
+{ "index": { "_id": 3 }}
+{ "app_name" : "Garden Coloring Book", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN", "price" : 0.0, "last_updated" : "2017-09-19T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.4}
+{ "index": { "_id": 4 }}
+{ "app_name" : "Tattoo Name On My Photo Editor", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN",           "price" : 0.0, "last_updated" : "2018-04-01T22:00:00.000Z", "content_rating" : "Teen", "rating" : 4.2}
+{ "index": { "_id": 5 }}
+{ "app_name" : "YouTube Kids", "type" : "Free", "genres" : "Entertainment;Music & Video", "category" : "FAMILY",           "price" : 0.0, "last_updated" : "2018-08-02T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.5}
+{ "index": { "_id": 6 }}
+{ "app_name" : "Candy Bomb", "type" : "Free", "genres" : "Casual;Brain Games", "category" : "FAMILY",           "price" : 0.0, "last_updated" : "2018-07-03T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.4}
+{ "index": { "_id": 7 }}
+{ "app_name" : "ROBLOX", "type" : "Free", "genres" : "Adventure;Action & Adventure", "category" : "FAMILY",           "price" : 0.0, "last_updated" : "2018-07-30T22:00:00.000Z", "content_rating" : "Everyone 10+", "rating" : 4.5}
+{ "index": { "_id": 8 }}
+{ "type" : "Free", "genres" : "Casual;Brain Games", "category" : "FAMILY",           "price" : 0.0, "last_updated" : "2018-07-22T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.4}
+{ "index": { "_id": 9 }}
+{ "app_name" : "Bowmasters", "type" : "Free", "genres" : "Action", "category" : "GAME",           "price" : 0.0, "last_updated" : "2018-07-22T22:00:00.000Z", "content_rating" : "Teen", "rating" : 4.7}
+{ "index": { "_id": 10 }}
+{ "app_name" : "Magic Tiles 3", "@timestamp" : "2019-03-02T07:03:20.040Z", "type" : "Free", "genres" : "Music", "category" : "GAME", "price" : 0.0, "last_updated" : "2018-08-02T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.5}
+{ "index": { "_id": 11 }}
+{ "app_name" : "Block Puzzle Classic Legend !", "@timestamp" : "2019-03-02T07:03:20.040Z", "type" : "Free", "genres" : "Puzzle", "category" : "GAME",           "price" : 0.0, "last_updated" : "2018-04-12T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.2}
+{ "index": { "_id": 12 }}
+{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "type" : "Free", "genres" : "Puzzle", "category" : "GAME",           "price" : 0.0, "last_updated" : "2018-08-02T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+{ "index": { "_id": 13 }}
+{ "app_name" : "QR Code Reader", "type" : "Free", "genres" : "Tools", "category" : "TOOLS",           "price" : 0.0, "last_updated" : "2016-03-15T23:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.0}
+{ "index": { "_id": 14 }}
+{ "app_name" : "SHAREit - Transfer & Share", "type" : "Free", "genres" : "Tools", "category" : "TOOLS",           "price" : 0.0, "last_updated" : "2018-07-29T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+{ "index": { "_id": 15 }}
+{ "app_name" : "Diabetes:M", "type" : "Free", "genres" : "Medical", "category" : "MEDICAL", "price" : 0.0, "last_updated" : "2018-07-31T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+// end::dml-filters-212-testCase[]
+
+Le mapping est inféré. Notez donc bien le mapping des champs contenant des chaînes de caractères. Nous avons représenté ci-dessous le mapping du champ category. Pour filtrer sur une category, il faut donc utiliser le champ category.keyword qui est de type keyword. Les champs imbriqués sous l'attribut fields sont accédés par cette notation pointée.
+
+
+// tag::dml-filters-212-mappingFieldCategory[]
+"category" : {
+"type" : "text",
+"fields" : {
+  "keyword" : {
+    "type" : "keyword",
+    "ignore_above" : 256
+  }
+}
+// end::dml-filters-212-mappingFieldCategory[]
+
+###### Quels sont tous les documents de la category ART_AND_DESIGN ?
+
+Plusieurs réponses possibles
+
+* Avec une query mixte de type booléen contenant
+    * un match_all
+    * et un filtre
+
+Le match_all peut être remplacé par une ou des requêtes full text (match, multi_match, ...). Si tel était le cas, le contexte aurait été de type full text avec un calcul de score.
+
+
+// tag::dml-filters-212-filterQueryMatchAll[]
+POST tp_elastic_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {"match_all": {}}
+      ],
+      "filter":
+      {
+        "term": {
+          "category.keyword": "ART_AND_DESIGN"
+        }
+
+      }
+    }
+  }
+}
+// end::dml-filters-212-filterQueryMatchAll[]
+
+* Avec une query de type booléen et un filtre
+
+// tag::dml-filters-212-filterQueryBoolean[]
+POST tp_elastic_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "filter":
+      {
+        "term": {
+          "category.keyword": "ART_AND_DESIGN"
+        }
+      }
+    }
+  }
+}
+// end::dml-filters-212-filterQueryBoolean[]
+
+* Avec une constant score query
+
+// tag::dml-filters-212-filterQueryConstantScore[]
+ GET /tp_elastic_filter/_doc/_search
+ {
+     "query" : {
+         "constant_score" : {
+           "filter":
+           {
+             "term": {
+               "category.keyword" : "ART_AND_DESIGN"
+             }
+           }
+         }
+     }
+ }
+// end::dml-filters-212-filterQueryConstantScore[]
+
+###### Quels sont tous les documents pour lesquels le champ date  last_updated est compris entre 2017-01-01 et 2017-12-31 (les documents de 2017 en somme) ?
+
+// tag::dml-filters-212-filterQueryDateRange[]
+POST tp_elastic_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {"match_all": {}}
+      ],
+      "filter":
+      {
+        "range": {
+          "last_updated": {
+            "gte": "2017-01-01",
+            "lte": "2017-12-31"
+          }
+        }
+      }
+    }
+  }
+}
+// end::dml-filters-212-filterQueryDateRange[]
+
+###### Quels sont les documents dont le rating est strictement supérieur à 4.6 ?
+
+// tag::dml-filters-212-filterQueryRatingRange[]
+POST tp_elastic_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {"match_all": {}}
+      ],
+      "filter":
+      {
+        "range": {
+          "rating": {
+            "gt": "4.6"
+          }
+        }
+      }
+    }
+  }
+}
+// end::dml-filters-212-filterQueryRatingRange[]
