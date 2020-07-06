@@ -4,7 +4,7 @@
 [[chapter-correction-dml-full-text-search-one-field]]
 == Recherches sur un champ unique
 
-// tag::dml-fts-match-query-test-case
+// tag::dml-fts-match-query-test-case[]
 POST /tp_elastic_mq/_bulk
 { "index": { "_id": 1 }}
 {"app_name" : "draw pixel art number"}
@@ -12,7 +12,7 @@ POST /tp_elastic_mq/_bulk
 {"app_name" : "draw pixel number"}
 { "index": { "_id": 3 }}
 {"app_name" : "draw figure"}
-// end::dml-fts-match-query-test-case
+// end::dml-fts-match-query-test-case[]
 
 
 #### Match query
@@ -53,12 +53,12 @@ GET tp_elastic_mq/_search?explain=true
 // tag::dml-fts-match-query-explain-one-tuple[]
 GET /tp_elastic_mq/_explain/3
 {
-"query":
-{
-"match": {
-"app_name": "draw"
-}
-}
+  "query":
+  {
+    "match": {
+      "app_name": "draw"
+    }
+  }
 }
 // end::dml-fts-match-query-explain-one-tuple[]
 
