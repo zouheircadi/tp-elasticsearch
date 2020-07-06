@@ -15,7 +15,7 @@ POST /tp_elastic_mq/_bulk
 // end::dml-fts-match-query-test-case[]
 
 
-#### Match query
+=== Match query
 Quels sont les documents qui contiennent le terme draw dans le champ app_name ?
 
 // tag::dml-fts-match-query[]
@@ -316,5 +316,46 @@ GET tp_elastic_mq/_search
   }
 }
 // end::dml-fts-match-query-AND[]
+
+
+=== Recherches multichamps - un texte spécifique à chaque champ
+
+
+###### inject data
+
+
+// tag::dml-fts-mfq-one-query-per-field-test-case[]
+POST /tp_elastic_mf1/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "draw pixel art number", "genres" : "Art & Design;Creativity"}
+{ "index": { "_id": 2 }}
+{"app_name" : "draw pixel number", "genres" : "Art & Design"}
+{ "index": { "_id": 3 }}
+{"app_name" : "draw figure", "genres" : "Art & Design"}
+// end::dml-fts-mfq-one-query-per-field-test-case[]
+
+
+* Trouver les documents qui contiennent
+    * draw dans le champ app_name
+    * art dans le champ genres
+
+
+// tag::dml-fts-mfq-one-query-per-field-query[]
+GET  tp_elastic_mf1/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {"match": {"app_name": "draw"}},
+        {"match": {"genres": "art"}}
+      ]
+    }
+  }
+}
+// tag::dml-fts-mfq-one-query-per-field-query[]
+
 
 
