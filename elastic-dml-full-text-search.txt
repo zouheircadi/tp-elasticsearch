@@ -646,4 +646,3 @@ La pondération est appelée boost est peut être :
 Il est possible d'appliquer des boosts différents à chaque champ. Dans l'exemple donné, on applique
 * un boost de 4 au champ app_name ce qui augmentera son poids dans le score global du document
 * un boost de 0.3 au champ genres ce qui diminuera son poids dans le score global du document
-
