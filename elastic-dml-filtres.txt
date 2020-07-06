@@ -196,13 +196,17 @@ Le mapping est inféré. Notez donc bien le mapping des champs contenant des cha
 
 
 // tag::dml-filters-212-mappingFieldCategory[]
-"category" : {
-"type" : "text",
-"fields" : {
-  "keyword" : {
-    "type" : "keyword",
-    "ignore_above" : 256
-  }
+"category" :
+{
+    "type" : "text",
+    "fields" :
+    {
+        "keyword" :
+        {
+            "type" : "keyword",
+            "ignore_above" : 256
+        }
+    }
 }
 // end::dml-filters-212-mappingFieldCategory[]
 
