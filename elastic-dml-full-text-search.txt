@@ -198,11 +198,9 @@ Décomposition du score du premier document remonté qui a le score le plus éle
 
 // tag::dml-fts-match-query-OR-explain-score-break-down[]
 * 0.9806374 =
-* score de draw
-* 0.11750762 => (0,13353139 * 0,88)
+** score de draw : 0.11750762 => (0,13353139 * 0,88)
 * (+)
-* score de art
-* 0.86312973 => (0,98082924 * 0,88)
+* score de art : 0.86312973 => (0,98082924 * 0,88)
 // end::dml-fts-match-query-OR-explain-score-break-down[]
 
 
@@ -381,6 +379,20 @@ GET  tp_elastic_mf1/_search
 //step-223-solution - debut
 ### Recherches multichamps - un texte commun à tous les champs
 
+// tag::dml-fts-mfq-one-text-for-all-fields-example[]
+GET /my_index/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {"match": {"champ1": "texte recherché"}},
+        {"match": {"champ2": "texte recherché"}},
+        {"match": {"champ3": "texte recherché"}}
+      ]
+    }
+  }
+}
+// end::dml-fts-mfq-one-text-for-all-fields-example[]
 
 #### Recherches de type booléen
 * Trouver les documents qui contiennent
@@ -588,11 +600,12 @@ Le score se décompose comme suit :
 
 // tag::dml-fts-mfq-one-text-for-all-fields-test-case-3-query-dismax-tie-breaker-explain-doc-2-score-break-down[]
 * 0.88960975 =
-    * 0,6931472 => le tie_breaker ne s'applique pas au champ dont le score est le plus élevé
-    *    (+)
-    * (tie_breaker * 0,6548752)  => prise en compte du champ de score plus bas multiplié par le tie_breaker
+** 0,6931472 => le tie_breaker ne s'applique pas au champ dont le score est le plus élevé
+* (+)
+** (tie_breaker * 0,6548752)  => prise en compte du champ de score plus bas multiplié par le tie_breaker
 
 Modulations possibles de l'effet tie_breaker :
+
 * tie_breaker = 0 : le score du document remonté sera celui du champ dont le score est le plus élevé
 * tie_breaker = 1 : Suppression de l'effet Dismax
 * tie_breaker usuel 0.3 à 0.4

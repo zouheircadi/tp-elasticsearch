@@ -1,0 +1,444 @@
+
+[[chapter-correction-dml-partial-matching]]
+= Partial matching
+
+== Chargement du jeu d'essai
+
+// tag::dml-partial-matching-tc-pm1-delete-if-exists[]
+DELETE  /tp_elastic_pm1
+// end::dml-partial-matching-tc-pm1-delete-if-exists[]
+
+// tag::dml-partial-matching-tc-pm1-create-index[]
+PUT /tp_elastic_pm1
+{
+  "mappings":
+  {
+      "properties" :
+      {
+        "code" :
+        {
+          "type" : "keyword"
+        },
+        "country" :
+        {
+          "type" : "keyword"
+        }
+      }
+  }
+}
+// end::dml-partial-matching-tc-pm1-create-index[]
+
+// tag::dml-partial-matching-load-link[]
+// dml-partial-matching-test-case-data.txt : https://www.dropbox.com/s/0y3ukkqkt3q6yo0/dml-partial-matching-test-case-data.txt?dl=0
+Indexer-y les données disponibles https://tinyurl.com/y8h36zvt[en ligne ici] en mode bulk
+// end::dml-partial-matching-load-link[]
+
+//dml-partial-matching-test-case-data.txt
+// tag::dml-partial-matching-tc-pm1-post-data[]
+POST /tp_elastic_pm1/_bulk
+// ... data à indexer : https://tinyurl.com/y8h36zvt
+// end::dml-partial-matching-tc-pm1-post-data[]
+
+
+
+== Partial matching sans modification de l’indexation
+=== Prefix query
+
+// tag::dml-partial-matching-prefix-query[]
+GET /tp_elastic_pm1/_search
+{
+  "query" :
+  {
+    "prefix": {
+      "country": {
+        "value": "Ba"
+      }
+    }
+  }
+}
+// end::dml-partial-matching-prefix-query[]
+
+###### validate pour voir la chaine utilisée dans la requête
+
+
+// tag::dml-partial-matching-prefix-query-validate[]
+GET /tp_elastic_pm1/_validate/query?explain
+{
+  "query" :
+  {
+    "prefix": {
+      "country": {
+        "value": "Ba"
+      }
+    }
+  }
+}
+// end::dml-partial-matching-prefix-query-validate[]
+
+Résultat
+
+{
+// tag::dml-partial-matching-prefix-query-validate-result[]
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "valid" : true,
+  "explanations" : [
+    {
+      "index" : "tp_elastic_pm1",
+      "valid" : true,
+      "explanation" : "country:Ba*"
+    }
+  ]
+}
+// end::dml-partial-matching-prefix-query-validate-result[]
+
+Le prefixe recherché est la chaine Ba. La casse de la chaine n'est pas modifié.
+
+
+
+##### RegExp query
+
+
+// tag::dml-partial-matching-regex-query[]
+GET /tp_elastic_pm1/_search
+{
+  "query" :
+  {
+    "regexp": {
+      "country": {
+        "value": ".*Repu.*"
+      }
+    }
+  }
+}
+// end::dml-partial-matching-regex-query[]
+
+
+###### Validate pour voir la chaine utilisée dans la requête
+
+
+// tag::dml-partial-matching-regex-query-validate[]
+GET /tp_elastic_pm1/_validate/query?explain
+{
+  "query" :
+  {
+    "regexp": {
+      "country": {
+        "value": ".*Repu.*"
+      }
+    }
+  }
+}
+// end::dml-partial-matching-regex-query-validate[]
+
+
+// tag::dml-partial-matching-regex-query-validate-result[]
+{
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "valid" : true,
+  "explanations" : [
+    {
+      "index" : "tp_elastic_pm1",
+      "valid" : true,
+      "explanation" : "country:/.*Repu.*/"
+    }
+  ]
+}
+// end::dml-partial-matching-regex-query-validate-result[]
+
+
+#### Note.
+Le typage du champ country est keyword. Il faut donc respecter la casse pour faire les requêtes. Si les champs étaient de type text, il aurait fallu veiller à faire la requête avec la même casse que la donnée indexée. Il faut bien garder à l'esprit les caractéristiques ci-dessous lors de l'utilisation de ce type de requête
+* Prend en compte le terme exact. Il n'y a pas d'analyse préalable. Il faut utiliser ces requêtes sur des champs non analysés
+* Ne calcule pas de score
+* Requêtes inefficace à proscrire sur des corpus volumineux en tenant compte de la cardinalité du champ
+
+
+##### match_phrase_prefix
+
+
+
+###### En vous aidant de la documentation en ligne pour la syntaxe, trouver les documents dont le champ country commence par cong.
+
+// tag::dml-partial-matching-match-phrase-prefix-query[]
+GET /tp_elastic_pm1/_search
+{
+  "query":
+  {
+    "match_phrase_prefix": {
+      "country": "cong"
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-query[]
+
+###### Si vous avez chargé le jeu d’essais avec les scripts qui vous ont été procurés, la recherche devrait être infructueuse. Pourquoi ?
+
+Un validate de la query permet d'avoir une indication
+
+// tag::dml-partial-matching-match-phrase-prefix-query-validate[]
+GET /tp_elastic_pm1/_validate/query?explain
+{
+  "query":
+  {
+    "match_phrase_prefix": {
+      "country": "cong"
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-query-validate[]
+
+Dans la réponse à cette requête de debug, il est indiqué que ce type de requête ne s'applique qu'aux champs de type text. Or, les champs de l'index sont de type keyword.
+
+
+
+###### Créer un autre index tp_elastic_pm2 avec le bon mapping et recharger les données.
+
+!!!
+// tag::dml-partial-matching-tc-pm2-delete-if-exists[]
+DELETE  /tp_elastic_pm2
+// end::dml-partial-matching-tc-pm2-delete-if-exists[]
+
+// tag::dml-partial-matching-tc-pm2-create-index[]
+PUT /tp_elastic_pm2
+{
+  "mappings":
+  {
+      "properties" :
+      {
+        "code" :
+        {
+          "type" : "keyword"
+        },
+        "country" :
+        {
+          "type" : "text",
+          "fields":
+          {
+            "keyword":
+            {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+  }
+}
+// end::dml-partial-matching-tc-pm2-create-index[]
+
+// tag::dml-partial-matching-tc-pm2-post-data[]
+POST /tp_elastic_pm2/_bulk
+// ... data à indexer : https://tinyurl.com/y8h36zvt
+// end::dml-partial-matching-tc-pm2-post-data[]
+
+
+###### validate de la query sur le nouvel index
+
+// tag::dml-partial-matching-match-phrase-prefix-query-new-index-validate[]
+GET /tp_elastic_pm2/_validate/query?explain
+{
+  "query":
+  {
+    "match_phrase_prefix": {
+      "country": "cong"
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-query-new-index-validate[]
+
+* L'explain sur le champ donne maintenant un résultat jokérisé
+
+
+###### Refaites la requête sur l’index tp_elastic_pm2
+
+// tag::dml-partial-matching-match-phrase-prefix-query-new-index[]
+GET /tp_elastic_pm2/_search
+{
+  "query":
+  {
+    "match_phrase_prefix": {
+      "country": "cong"
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-query-new-index[]
+
+
+
+
+== Partial matching avec modification de l’indexation : edge-ngrams
+
+- En vous aidant de la documentation en ligne, créer un index de type index-time-search-as-you-type que vous appellerez tp_elastic_pm3
+
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-delete-if-exists[]
+DELETE tp_elastic_pm3
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-delete-if-exists[]
+
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-create-index[]
+PUT /tp_elastic_pm3
+{
+  "settings":
+  {
+    "analysis":
+    {
+      "filter":
+      {
+        "ac_filter":
+        {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20
+        }
+      },
+      "analyzer":
+      {
+        "ac_analyzer":
+        {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter":
+          [
+            "lowercase",
+            "ac_filter"
+          ]
+        }
+      }
+    }
+  },
+  "mappings":
+  {
+      "properties" :
+      {
+        "code" :
+        {
+          "type" : "keyword"
+        },
+        "country" :
+        {
+          "type" : "text",
+          "fields":
+          {
+            "keyword":
+            {
+              "type": "keyword"
+            },
+            "autocomplete":
+            {
+              "type": "text",
+              "analyzer" : "ac_analyzer",
+              "search_analyzer" : "standard"
+            }
+          }
+        }
+      }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-create-index[]
+
+
+- Charger les données dans l’index nouvellement créé.
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-load-data[]
+POST /tp_elastic_pm3/_bulk
+// ... data à indexer : https://tinyurl.com/y8h36zvt
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-load-data[]
+
+- Tester le nouvel index en cherchant le token “rep”
+
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1[]
+GET tp_elastic_pm3/_search
+{
+  "query":
+  {
+    "match": {
+      "country.autocomplete": "rep"
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1[]
+
+
+- Faites une analyze de la chaine “REPUBLic” sur le champ country.autocomplete
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1-analyze[]
+GET /tp_elastic_pm3/_analyze
+{
+  "text": ["REPUBLic"],
+  "field": "country.autocomplete"
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1-analyze[]
+
+La sortie devrait être comme indiqué ci-dessous. Le token REPUBLic passe l'analyseur de type edge_ngram.
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1-analyze-result[]
+{
+  "tokens" : [
+    {
+      "token" : "r",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "re",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "rep",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "repu",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "repub",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "republ",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "republi",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "republic",
+      "start_offset" : 0,
+      "end_offset" : 8,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    }
+  ]
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1-analyze-result[]

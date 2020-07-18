@@ -1,0 +1,227 @@
+
+
+[[chapter-correction-dml-lang-spec]]
+= Spécificités du langage
+
+
+== Les utilisateurs n’en font qu’à leur tête !
+
+
+- Faites une requête de type match sur le champ app_name pour la chaîne photos.
+
+
+// tag::dml-lang-spec-query-app-name[]
+GET tp_elastic_filter/_search
+{
+  "query":
+  {
+    "match": {
+      "app_name": "photos"
+    }
+  }
+}
+// end::dml-lang-spec-query-app-name[]
+
+- Cette requête ne permet de trouver aucun document. Pourquoi (réponse argumentée avec l’outillage mis à disposition par Elasticsearch) ?
+
+
+// tag::dml-lang-spec-query-app-name-analyze-field[]
+GET tp_elastic_filter/_analyze
+{
+  "text": ["photos"],
+  "field": "app_name"
+}
+// end::dml-lang-spec-query-app-name-analyze-field[]
+
+Le terme photos est analysé en photos. Il est donc normal de ne pas le trouver
+
+- Quel test pourrait-on faire pour trouver un ou des analyzers adéquats sans indexation de données (réponse argumentée avec l’outillage mis à disposition par Elasticsearch)?
+
+
+// tag::dml-lang-spec-query-app-name-analyze-with-language-analyzer[]
+GET tp_elastic_filter/_analyze
+{
+  "text": ["photos"],
+  "analyzer": "english"
+}
+// end::dml-lang-spec-query-app-name-analyze-with-language-analyzer[]
+
+Ou plus simplement la requête ci-dessous. Le endpoint _analyze peut être invoqué directement et n'exige pas la présence d'un index
+
+
+// tag::dml-lang-spec-query-app-name-analyze-with-language-analyzer-simpler[]
+GET _analyze
+{
+  "text": ["photos"],
+  "analyzer": "english"
+}
+// end::dml-lang-spec-query-app-name-analyze-with-language-analyzer-simpler[]
+
+
+
+
+== Création d’un index personnalisé
+
+Nous allons créer l'index [en deux étapes](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html)
+* création d'un index "vide" (sans mappings mais avec les settings du template)
+* création du mapping
+
+- Suppression de l'index
+
+// tag::dml-lang-spec-query-app-name-index-lang1-delete[]
+DELETE tp_elastic_lang1
+// end::dml-lang-spec-query-app-name-index-lang1-delete[]
+
+
+- Création de l'index
+
+// tag::dml-lang-spec-query-app-name-index-lang1-create[]
+PUT tp_elastic_lang1
+// end::dml-lang-spec-query-app-name-index-lang1-create[]
+
+- Création du mapping
+
+// tag::dml-lang-spec-query-app-name-index-lang1-mapping[]
+PUT tp_elastic_lang1/_mapping/
+{
+  "properties" :
+  {
+    "app_name" :
+    {
+      "type" : "text",
+      "fields" :
+      {
+        "english" :
+        {
+          "type" : "text",
+          "analyzer" : "english"
+        }
+      }
+    },
+    "type" :
+    {
+      "type" : "keyword"
+    },
+    "genres" :
+    {
+      "type" : "text",
+      "fields" :
+      {
+        "english" :
+        {
+          "type" : "text",
+          "analyzer" : "english"
+        }
+      }
+    },
+    "category" :
+    {
+      "type" : "keyword"
+    },
+    "price" :
+    {
+      "type" : "double"
+    },
+    "last_updated" :
+    {
+      "type" : "date"
+    },
+    "content_rating" :
+    {
+      "type" : "text",
+      "fields" :
+      {
+        "keyword" :
+        {
+          "type" : "keyword"
+        }
+      }
+    },
+    "rating" :
+    {
+      "type" : "double"
+    }
+  }
+}
+// end::dml-lang-spec-query-app-name-index-lang1-mapping[]
+
+
+== Ajout des données
+
+// tag::dml-lang-spec-query-app-name-index-lang1-add-data[]
+POST /tp_elastic_lang1/_bulk
+// ... data to post from // TODO ajouter le lien quand possible - dml-lang-spec-test-case-data.txt
+// end::dml-lang-spec-query-app-name-index-lang1-add-data[]
+
+
+== Requêtes
+
+- Faites une requête de type multimatch bestfields uniquement sur le champ app_name pour
+rechercher la chaîne photos (Approche naïve).
+
+// tag::dml-lang-spec-query-app-name-index-lang1-query1[]
+GET tp_elastic_lang1/_search
+{
+  "query":
+  {
+    "multi_match": {
+      "query": "photos",
+      "fields": ["app_name"]
+    }
+  }
+}
+// end::dml-lang-spec-query-app-name-index-lang1-query1[]
+
+- Que constatez vous ?
+* La requête ne retourne rien car elle n'adresse pas le bon champ
+
+
+- Qu’est-il possible de faire pour augmenter le recall de cette requête ?
+* Je connais mon mapping et je sais ajouter des champs imbriqués dans la requête multifields pour tenir compte de la langue du texte pour augmenter le recall
+
+// tag::dml-lang-spec-query-app-name-index-lang1-increase-recall-1[]
+GET tp_elastic_lang1/_search
+{
+  "query":
+  {
+    "multi_match": {
+      "query": "photos",
+      "fields": ["app_name","app_name.english"]
+    }
+  }
+}
+// end::dml-lang-spec-query-app-name-index-lang1-increase-recall-1[]
+
+
+
+* Je joue sur la pondération. Dans ce cas d'utilisation, si on considère qu'on veut retourner aux utilisateurs en priorité les documents qui contiennent les chaïnes de caractère les plus proches de leurs saisies, on peut
+* augmenter la pondération du champ app_name qui utilise le standard analyzer (tokens stockés sans modification).
+* ajouter dans les champs recherchés le champ qui fait l'objet d'une analyse spécifique à la langue sans nécessairement toucher à la pondération
+
+
+
+// tag::dml-lang-spec-query-app-name-index-lang1-increase-recall-2[]
+GET tp_elastic_lang1/_search
+{
+  "query":
+  {
+    "multi_match": {
+      "query": "photos",
+      "fields": ["app_name^4","app_name.english"]
+    }
+  }
+}
+// end::dml-lang-spec-query-app-name-index-lang1-increase-recall-2[]
+
+
+On constate ainsi que l'augmentation de la pondération du champ app_name ne change pas le score car le terme photos n'est pas trouvé. C'est le terme photo qui est trouvé dans le champ app_name.english ; cette démarche permet d'augmenter simultanément
+
+* la précision : augmentation du score des résultats pertinents qui apparaitront ainsi en premier dans la recherche
+* le recall : recherche dans un ou des champs avec des indexations qui reduisent l'inflexion et augmentent ainsi la probabilité de trouver des termes proches
+
+Pour conclure, il faut bien garder à l'esprit que la query de type pierre philosphale n'existe pas. Une requête et le tuning correspondant ne sont que l'expression d'un cas d'utilisation.
+
+
+
+
+<<<<

@@ -1,0 +1,180 @@
+[[chapter-correction-dml-proximity]]
+= Proximité
+
+
+### Phrase match
+
+##### Création index de travail
+
+// tag::dml-proximity-test-case[]
+POST /tp_elastic_mp1/_bulk
+{ "index": { "_id": 1 }}
+{ "title": "Je ne suis pas content. Service client nul" }
+{ "index": { "_id": 2 }}
+{ "title": "Je suis content. Pas de retard de livraison" }
+{ "index": { "_id": 3 }}
+{ "title": "Je suis tres content. pas de probleme" }
+// end::dml-proximity-test-case[]
+
+
+##### Analyse des données indexées
+###### Mettez en évidence cet ordre avec le champ title du document d’identifiant 3.
+
+
+Si vous avez fait l'exercice 2.1, vous l'avez déjà utilisé. Il s'agit de la requête sur le endpoint _analyze [indiquée en annexe](https://docs.google.com/document/d/1wZqOUP7X6eSZl7jMz7YXJbKT8EkNI30ZxlyYU3vqsCE/edit#heading=h.46n4fb7pm59).
+
+
+// tag::dml-proximity-analyze-query[]
+GET /tp_elastic_mp1/_analyze
+{
+  "field": "app_name",
+  "text" : "Je suis tres content. pas de probleme"
+}
+// end::dml-proximity-analyze-query[]
+
+Le résultat donne la position de chaque token. Cette information est donc connue car stockée lors de l'indexation.
+
+// tag::dml-proximity-analyze-result[]
+{
+  "tokens" : [
+    {
+      "token" : "je",
+      "start_offset" : 0,
+      "end_offset" : 2,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "suis",
+      "start_offset" : 3,
+      "end_offset" : 7,
+      "type" : "<ALPHANUM>",
+      "position" : 1
+    },
+    {
+      "token" : "tres",
+      "start_offset" : 8,
+      "end_offset" : 12,
+      "type" : "<ALPHANUM>",
+      "position" : 2
+    },
+    {
+      "token" : "content",
+      "start_offset" : 13,
+      "end_offset" : 20,
+      "type" : "<ALPHANUM>",
+      "position" : 3
+    },
+    {
+      "token" : "pas",
+      "start_offset" : 22,
+      "end_offset" : 25,
+      "type" : "<ALPHANUM>",
+      "position" : 4
+    },
+    {
+      "token" : "de",
+      "start_offset" : 26,
+      "end_offset" : 28,
+      "type" : "<ALPHANUM>",
+      "position" : 5
+    },
+    {
+      "token" : "probleme",
+      "start_offset" : 29,
+      "end_offset" : 37,
+      "type" : "<ALPHANUM>",
+      "position" : 6
+    }
+  ]
+}
+// end::dml-proximity-analyze-result[]
+
+##### match ou match_phrase
+
+###### Faites la requête
+
+
+// tag::dml-proximity-query-naive[]
+GET /tp_elastic_mp1/_search
+{
+  "query":
+  {
+    "match": {
+      "title": "pas content"
+    }
+  }
+}
+// end::dml-proximity-query-naive[]
+
+###### Que pensez vous de la pertinence du résultat ?
+C'est le score des documents retournés qui nous donne une indication de la pertinence des résultats (voir ci-dessous le json simplifié retourné par la requête).
+On constate ainsi que la distinction entre les utilisateurs content et pas content n'est pas bien reflétée par une différence de score.
+
+// tag::dml-proximity-query-naive-score[]
+{
+  "hits" : [
+    {
+      "_score" : 0.27691346,
+      "_source" : {
+        "title" : "Je suis tres content. pas de probleme"
+      }
+    },
+    {
+      "_score" : 0.26239565,
+      "_source" : {
+        "title" : "Je ne suis pas content. Service client nul"
+      }
+    },
+    {
+      "_score" : 0.26239565,
+      "_source" : {
+        "title" : "Je suis content. Pas de retard de livraison"
+      }
+    }
+  ]
+}
+// end::dml-proximity-query-naive-score[]
+
+
+###### Faites la requête sur les mêmes tokens mais avec une query de type match_phrase. Comparez le résultat obtenu avec le résultat précédent.
+Requête match_phrase avec la chaîne "pas content".
+Cette requête ne retourne qu'un seul document.
+* Avantage. Elle prend en compte l'ordre des tokens (pas content) qui induit du sens
+* Inconvénient. Elle est trop restricitive
+
+Requête multimatch avec la chaîne "pas content"
+
+// tag::dml-proximity-query-match-phrase[]
+GET /tp_elastic_mp1/_search
+{
+  "query":
+  {
+    "match_phrase":
+    {
+      "title" : "pas content"
+    }
+  }
+}
+// end::dml-proximity-query-match-phrase[]
+
+
+##### Match phrase avec slop
+
+// tag::dml-proximity-query-match-phrase-with-slop[]
+GET /tp_elastic_mp1/_search
+{
+  "query":
+  {
+    "match_phrase":
+    {
+      "title" :
+      {
+        "query": "pas content",
+        "slop" : "2"
+      }
+    }
+  }
+}
+// end::dml-proximity-query-match-phrase-with-slop[]
+
