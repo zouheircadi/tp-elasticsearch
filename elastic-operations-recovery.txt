@@ -1,0 +1,127 @@
+[[chapter-elastic-ops-recovery]]
+
+## Simple recovery
+
+
+##### Démarrer cluster
+
+##### Requête REST pour la création du repository
+
+
+// tag::elastic-ops-recovery-create-backup-query[]
+PUT /_snapshot/cluster-7.x-backup
+{
+  "type": "fs",
+  "settings": {
+    "location": "<CHEMIN_DE_VOTRE_CHOIX>",
+    "compressed" : true
+  }
+}
+// end::elastic-ops-recovery-create-backup-query[]
+
+
+##### La création échoue (voir trace partielle ci-dessous)
+
+// tag::elastic-ops-recovery-create-backup-error[]
+ Erreur = "reason" : "[cluster-7.x-backup] location [<CHEMIN_DE_VOTRE_CHOIX>] doesn't match any of the locations specified by path.repo because this setting is empty"
+// end::elastic-ops-recovery-create-backup-error[]
+
+Il faut mettre le path dans la configuration statique (elasticearch.yml) des nodes Elasticsearch et les redémarrer
+
+// tag::elastic-ops-recovery-create-backup-path-repo[]
+path.repo: ["/data/backup"]
+// end::elastic-ops-recovery-create-backup-path-repo[]
+
+
+##### Vérification création
+// tag::elastic-ops-recovery-create-backup-verif[]
+GET /_snapshot/cluster-7.x-backup
+// end::elastic-ops-recovery-create-backup-verif[]
+
+##### Créer l'index
+// tag::elastic-ops-recovery-create-recovery-index[]
+PUT /recovery_index
+{
+  "settings":
+  {
+    "number_of_shards": 4,
+    "number_of_replicas": 1
+  }
+}
+// end::elastic-ops-recovery-create-recovery-index[]
+
+
+##### Première indexation des données
+// tag::elastic-ops-recovery-add-data[]
+./bin/logstash   -f <$PATH_TO>/ls-google-playstore.conf
+// end::elastic-ops-recovery-add-data[]
+
+##### Vérifier le nombre de documents de l'index créé. Il doit y avoir 100 000 documents
+// tag::elastic-ops-recovery-count[]
+GET /recovery_index/_count
+// end::elastic-ops-recovery-count[]
+
+##### Premier snapshot
+// tag::elastic-ops-recovery-create-snapshot-1[]
+POST /_snapshot/cluster-7.x-backup/snapshot_1
+{
+  "indices": "recovery_index",
+  "ignore_unavailable": true,
+  "include_global_state": false
+}
+// end::elastic-ops-recovery-create-snapshot-1[]
+
+##### Deuxième indexation des données
+
+##### Deuxième snapshot
+L'opération est bloquante en rajoutant à la fin de l'URL la chaine suivante : "?wait_for_completion=true"
+
+// tag::elastic-ops-recovery-create-snapshot-2[]
+POST /_snapshot/cluster-7.x-backup/snapshot_2?wait_for_completion=true
+{
+  "indices": "recovery_index",
+  "ignore_unavailable": true,
+  "include_global_state": false
+}
+// end::elastic-ops-recovery-create-snapshot-2[]
+
+##### Contrôler la distribution des shards
+// tag::elastic-ops-recovery-cat-shards[]
+GET /_cat/shards/recovery_index?v
+// end::elastic-ops-recovery-cat-shards[]
+
+##### Vérifier le nombre de documents de l'index créé. Il doit y avoir 200 000 documents
+
+##### Supprimer l'index
+
+// tag::elastic-ops-recovery-delete-index[]
+DELETE /recovery_index
+// end::elastic-ops-recovery-delete-index[]
+
+##### Restaurer l'index avec le premier snapshot
+
+// tag::elastic-ops-recovery-restore-snapshot-1[]
+POST /_snapshot/cluster-7.x-backup/snapshot_1/_restore
+// end::elastic-ops-recovery-restore-snapshot-1[]
+
+##### Requête de contôle après la première restauration => 100.000 documents
+
+
+
+##### Supprimer l'index
+
+
+##### Restaurer l'index avec le deuxième snapshot
+// tag::elastic-ops-recovery-restore-snapshot-2[]
+POST /_snapshot/cluster-7.x-backup/snapshot_2/_restore
+// end::elastic-ops-recovery-restore-snapshot-2[]
+
+##### Requête de contôle après la première restauration => 200.000 documents
+
+##### Contrôler la distribution des shards
+
+
+<!---
+## Recovery after corruption
+## Red state after nodes loss
+-->

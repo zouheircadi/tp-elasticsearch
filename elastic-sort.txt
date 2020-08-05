@@ -1,0 +1,102 @@
+[[chapter-correction-sort-source-exclusion]]
+= Tri
+
+[[parag-correction-sort-google-playstore]]
+== Corpus Google playstore
+
+
+[[parag-correction-sort-google-playstore-load-data]]
+=== Chargement des données
+
+
+
+[[parag-correction-sort-google-playstore-queries]]
+=== Requêtes
+
+
+###### 1
+###### Ecrivez une requête de type match_all
+* qui retourne les 25 premiers documents
+* avec un tri CROISSANT sur le category.keyword
+
+// tag::parag-correction-sort-google-playstore-query-one[]
+GET /tp_elastic_gstore/_search
+{
+  "size": 25,
+  "sort": [
+    {
+      "category.keyword": {
+        "order": "asc"
+      }
+    }
+  ],
+  "query":
+  {
+    "match_all": {}
+  }
+}
+// end::parag-correction-sort-google-playstore-query-one[]
+
+
+###### 1
+######  Ecrivez une requête
+* qui retourne les 5 premiers documents
+* contenant network dans le champ app_name
+* en ne conservant que les champs app_name, genres, rating, last_updated dans la réponse
+* avec un tri ordre DECROISSANT sur le rating
+
+// tag::parag-correction-sort-google-playstore-query-two[]
+GET /tp_elastic_gstore/_search
+{
+  "size": 5,
+  "_source": ["app_name","genres","rating","last_updated" ],
+  "sort": [
+    {
+      "rating": {
+        "order": "desc"
+      }
+    }
+  ],
+  "query":
+  {
+    "match": {
+      "app_name": "network"
+    }
+  }
+}
+// end::parag-correction-sort-google-playstore-query-two[]
+
+
+###### 1
+######  Ecrivez une requête
+* qui retourne les 10 premiers documents
+* contenant photo dans le champ app_name ou app_name.english
+* Avec un boost de 4 sur le champ app_name
+* en vous limitant à la présence des champs app_name, category, type, rating et last_updated
+*  avec un tri ordre DECROISSANT sur le rating
+
+// tag::parag-correction-sort-google-playstore-query-three[]
+GET /tp_elastic_gstore/_search
+{
+  "size": 10,
+  "_source": ["app_name","category","type","rating","last_updated" ],
+  "sort": [
+    {
+      "last_updated": {
+        "order": "asc"
+      }
+    }
+  ],
+  "query":
+  {
+    "multi_match":
+    {
+      "query": "photo",
+      "fields": ["app_name^4","app_name.english"]
+    }
+  }
+}
+// end::parag-correction-sort-google-playstore-query-three[]
+
+
+

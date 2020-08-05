@@ -1,0 +1,444 @@
+[[chapter-elastic-ops-architectures-corrections]]
+
+// tag::elastic-ops-architectures-corrections-get-ilm-status-query[]
+GET /_ilm/status
+// end::elastic-ops-architectures-corrections-get-ilm-status-query[]
+
+// tag::elastic-ops-architectures-corrections-get-ilm-status-answer[]
+{
+  "operation_mode" : "RUNNING"
+}
+// end::elastic-ops-architectures-corrections-get-ilm-status-answer[]
+
+
+// tag::elastic-ops-architectures-corrections-query-ilm-creation[]
+PUT _ilm/policy/hot-warm-cold-delete-1-policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_docs":  20000
+          },
+          "set_priority": {
+            "priority": 50
+          }
+        }
+      },
+      "warm": {
+        "min_age": "4m",
+        "actions": {
+          "forcemerge": {
+            "max_num_segments": 1
+          },
+          "shrink": {
+            "number_of_shards": 1
+          },
+          "allocate": {
+            "require": {
+              "box_type": "warm"
+            }
+          },
+          "set_priority": {
+            "priority": 25
+          }
+        }
+      },
+      "cold": {
+        "min_age": "8m",
+        "actions": {
+          "set_priority": {
+            "priority": 0
+          },
+          "freeze": {},
+          "allocate": {
+            "require": {
+              "box_type": "cold"
+            }
+          }
+        }
+      },
+      "delete": {
+        "min_age": "12m",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+// end::elastic-ops-architectures-corrections-query-ilm-creation[]
+
+
+// tag::elastic-ops-architectures-corrections-query-ilm-template[]
+PUT _template/hot_warm_cold_delete_1_template
+{
+  "index_patterns": ["hwcd-*"],
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "refresh_interval": "5s",
+    "index.lifecycle.name": "hot-warm-cold-delete-1-policy",
+    "index.lifecycle.rollover_alias": "hwcd",
+    "index.routing.allocation.require.box_type": "hot"
+  }
+}
+// end::elastic-ops-architectures-corrections-query-ilm-template[]
+
+
+// tag::elastic-ops-architectures-corrections-query-ilm-poll-interval-setting[]
+PUT _cluster/settings
+{
+  "persistent": {
+    "indices.lifecycle.poll_interval": "500ms"
+  }
+}
+// end::elastic-ops-architectures-corrections-query-ilm-poll-interval-setting[]
+
+
+// tag::elastic-ops-architectures-corrections-query-ilm-index-bootstrap[]
+PUT /hwcd_000001?pretty
+{
+  "aliases": {
+    "hwcd": {
+      "is_write_index": true
+    }
+  }
+}
+// end::elastic-ops-architectures-corrections-query-ilm-index-bootstrap[]
+
+
+// tag::elastic-ops-architectures-corrections-query-ilm-cat-on-shards[]
+GET /_cat/shards/hwc*?v&h=index,shard,prirep,state,docs,store,node
+// end::elastic-ops-architectures-corrections-query-ilm-cat-on-shards[]
+
+
+// tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-1[]
+index       shard prirep state    docs store node
+hwcd-000003 0     p      STARTED 42126   8mb node-2
+hwcd-000004 0     p      STARTED     0  230b node-1
+hwcd-000002 0     p      STARTED 25000 5.2mb node-1
+hwcd-000001 0     p      STARTED 32874 6.2mb node-1
+// end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-1[]
+
+
+// tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-2[]
+index       shard prirep state    docs store node
+hwcd-000003 0     p      STARTED 42126   7mb node-3
+hwcd-000004 0     p      STARTED     0  283b node-1
+hwcd-000002 0     p      STARTED 25000 4.4mb node-3
+hwcd-000001 0     p      STARTED 32874 5.6mb node-3
+// end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-2[]
+
+
+// tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-3[]
+index       shard prirep state   docs store node
+hwcd-000004 0     p      STARTED    0  283b node-1
+// end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-3[]
+
+
+// tag::elastic-ops-architectures-corrections-ilm-explain-query[]
+GET hwcd*/_ilm/explain
+// end::elastic-ops-architectures-corrections-ilm-explain-query[]
+
+
+// tag::elastic-ops-architectures-corrections-ilm-explain-answer-step-1[]
+{
+  "indices" : {
+    "hwcd-000001" : {
+      "index" : "hwcd-000001",
+      "managed" : true,
+      "policy" : "hot-warm-cold-delete-1-policy",
+      "lifecycle_date_millis" : 1590488806763,
+      "age" : "2.83m",
+      "phase" : "hot",
+      "phase_time_millis" : 1590488666120,
+      "action" : "complete",
+      "action_time_millis" : 1590488808338,
+      "step" : "complete",
+      "step_time_millis" : 1590488808338,
+      "phase_execution" : {
+        "policy" : "hot-warm-cold-delete-1-policy",
+        "phase_definition" : {
+          "min_age" : "0ms",
+          "actions" : {
+            "rollover" : {
+              "max_docs" : 20000
+            },
+            "set_priority" : {
+              "priority" : 50
+            }
+          }
+        },
+        "version" : 1,
+        "modified_date_in_millis" : 1590488518359
+      }
+    },
+    "hwcd-000002" : {
+      "index" : "hwcd-000002",
+      "managed" : true,
+      "policy" : "hot-warm-cold-delete-1-policy",
+      "lifecycle_date_millis" : 1590488812598,
+      "age" : "2.74m",
+      "phase" : "hot",
+      "phase_time_millis" : 1590488807199,
+      "action" : "complete",
+      "action_time_millis" : 1590488814315,
+      "step" : "complete",
+      "step_time_millis" : 1590488814315,
+      "phase_execution" : {
+        "policy" : "hot-warm-cold-delete-1-policy",
+        "phase_definition" : {
+          "min_age" : "0ms",
+          "actions" : {
+            "rollover" : {
+              "max_docs" : 20000
+            },
+            "set_priority" : {
+              "priority" : 50
+            }
+          }
+        },
+        "version" : 1,
+        "modified_date_in_millis" : 1590488518359
+      }
+    },
+    "hwcd-000003" : {
+      "index" : "hwcd-000003",
+      "managed" : true,
+      "policy" : "hot-warm-cold-delete-1-policy",
+      "lifecycle_date_millis" : 1590488824098,
+      "age" : "2.55m",
+      "phase" : "hot",
+      "phase_time_millis" : 1590488813140,
+      "action" : "complete",
+      "action_time_millis" : 1590488825851,
+      "step" : "complete",
+      "step_time_millis" : 1590488825851,
+      "phase_execution" : {
+        "policy" : "hot-warm-cold-delete-1-policy",
+        "phase_definition" : {
+          "min_age" : "0ms",
+          "actions" : {
+            "rollover" : {
+              "max_docs" : 20000
+            },
+            "set_priority" : {
+              "priority" : 50
+            }
+          }
+        },
+        "version" : 1,
+        "modified_date_in_millis" : 1590488518359
+      }
+    },
+    "hwcd-000004" : {
+      "index" : "hwcd-000004",
+      "managed" : true,
+      "policy" : "hot-warm-cold-delete-1-policy",
+      "lifecycle_date_millis" : 1590488824282,
+      "age" : "2.54m",
+      "phase" : "hot",
+      "phase_time_millis" : 1590488824685,
+      "action" : "rollover",
+      "action_time_millis" : 1590488826704,
+      "step" : "check-rollover-ready",
+      "step_time_millis" : 1590488826704,
+      "phase_execution" : {
+        "policy" : "hot-warm-cold-delete-1-policy",
+        "phase_definition" : {
+          "min_age" : "0ms",
+          "actions" : {
+            "rollover" : {
+              "max_docs" : 20000
+            },
+            "set_priority" : {
+              "priority" : 50
+            }
+          }
+        },
+        "version" : 1,
+        "modified_date_in_millis" : 1590488518359
+      }
+    }
+  }
+}
+// end::elastic-ops-architectures-corrections-ilm-explain-answer-step-1[]
+
+// tag::elastic-ops-architectures-corrections-ilm-explain-answer-step-2[]
+{
+  "indices" : {
+    "hwcd-000004" : {
+      "index" : "hwcd-000004",
+      "managed" : true,
+      "policy" : "hot-warm-cold-delete-1-policy",
+      "lifecycle_date_millis" : 1590488824282,
+      "age" : "25.75m",
+      "phase" : "hot",
+      "phase_time_millis" : 1590488824685,
+      "action" : "rollover",
+      "action_time_millis" : 1590488826704,
+      "step" : "check-rollover-ready",
+      "step_time_millis" : 1590488826704,
+      "phase_execution" : {
+        "policy" : "hot-warm-cold-delete-1-policy",
+        "phase_definition" : {
+          "min_age" : "0ms",
+          "actions" : {
+            "rollover" : {
+              "max_docs" : 20000
+            },
+            "set_priority" : {
+              "priority" : 50
+            }
+          }
+        },
+        "version" : 1,
+        "modified_date_in_millis" : 1590488518359
+      }
+    }
+  }
+}
+// end::elastic-ops-architectures-corrections-ilm-explain-answer-step-2[]
+
+
+[[chapter-elastic-ops-archi-prg-allocation-awareness]]
+
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-create-index[]
+PUT /awareness_index
+{
+  "settings":
+  {
+    "number_of_shards": 4,
+    "number_of_replicas": 1
+  }
+}
+// end::elastic-ops-architectures-corrections-alloc-awareness-create-index[]
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-without-cat-query[]
+GET /_cat/shards/awareness_index?v&h=index,shard,prirep,state,node
+// end::elastic-ops-architectures-corrections-alloc-awareness-without-cat-query[]
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-without-cat-answer[]
+index           shard prirep state node
+awareness_index 1     r      STARTED node-1
+awareness_index 0     p      STARTED node-1
+awareness_index 0     r      STARTED node-2
+awareness_index 1     p      STARTED node-2
+
+awareness_index 3     r      STARTED node-3
+awareness_index 2     p      STARTED node-3
+awareness_index 3     p      STARTED node-4
+awareness_index 2     r      STARTED node-4
+// end::elastic-ops-architectures-corrections-alloc-awareness-without-cat-answer[]
+
+
+[[chapter-elastic-ops-archi-aa-prg-with-awareness]]
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-delete-index[]
+DELETE /awareness_index
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-delete-index[]
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cat-query[]
+GET /_cat/shards/awareness_index?v&h=index,shard,prirep,state,node
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cat-query[]
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cat-answer[]
+index           shard prirep state     node
+awareness_index 1     p      STARTED   node-1
+awareness_index 0     r      STARTED   node-1
+awareness_index 3     p      STARTED   node-2
+awareness_index 2     r      STARTED   node-2
+
+awareness_index 2     p      STARTED   node-3
+awareness_index 1     r      STARTED   node-3
+awareness_index 0     p      STARTED   node-4
+awareness_index 3     r      STARTED   node-4
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cat-answer[]
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-routing-allocation-enable-setting[]
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.enable": "primaries"
+  }
+}
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-routing-allocation-enable-setting[]
+
+
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cat-query-after-killing[]
+GET /_cat/shards/awareness_index?v&h=index,shard,prirep,state,node
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cat-query-after-killing[]
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cat-anwser-after-killing[]
+index           shard prirep state            node
+awareness_index 3     p      STARTED          node-2
+awareness_index 1     p      STARTED          node-1
+awareness_index 2     p      STARTED          node-2
+awareness_index 0     p      STARTED          node-1
+awareness_index 0     r      UNASSIGNED
+awareness_index 2     r      UNASSIGNED
+awareness_index 1     r      UNASSIGNED
+awareness_index 3     r      UNASSIGNED
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cat-anwser-after-killing[]
+
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-query[]
+GET _cluster/health/
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-query[]
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-answer[]
+{
+    "cluster_name" : "production-mode",
+    "status" : "yellow",
+    "timed_out" : false,
+    "number_of_nodes" : 2,
+    "number_of_data_nodes" : 2,
+    "active_primary_shards" : 9,
+    "active_shards" : 9,
+    "relocating_shards" : 0,
+    "initializing_shards" : 0,
+    "unassigned_shards" : 8,
+    "delayed_unassigned_shards" : 0,
+    "number_of_pending_tasks" : 0,
+    "number_of_in_flight_fetch" : 0,
+    "task_max_waiting_in_queue_millis" : 0,
+    "active_shards_percent_as_number" : 52.94117647058824
+}
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-answer[]
+
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-on-index-query[]
+GET _cluster/health/awareness_index
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-on-index-query[]
+
+// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-on-index-answer[]
+{
+  "cluster_name" : "production-mode",
+  "status" : "yellow",
+  "timed_out" : false,
+  "number_of_nodes" : 2,
+  "number_of_data_nodes" : 2,
+  "active_primary_shards" : 4,
+  "active_shards" : 4,
+  "relocating_shards" : 0,
+  "initializing_shards" : 0,
+  "unassigned_shards" : 4,
+  "delayed_unassigned_shards" : 0,
+  "number_of_pending_tasks" : 0,
+  "number_of_in_flight_fetch" : 0,
+  "task_max_waiting_in_queue_millis" : 0,
+  "active_shards_percent_as_number" : 52.94117647058824
+}
+// end::elastic-ops-architectures-corrections-alloc-awareness-with-cluster-health-on-index-answer[]

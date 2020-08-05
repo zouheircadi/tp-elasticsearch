@@ -249,14 +249,6 @@ GET /tp_elastic_gstore/_analyze
 
 ###### Modifier le mapping pour que la recherche donne un résultat avec le token diabete ?
 
-// tag::dml-playstore-use-case-index-delete-instruction[]
-* Supprimer les index existants dont le nom commence par la chaine tp_elastic_gstore_
-// end::dml-playstore-use-case-index-delete-instruction[]
-
-// tag::dml-playstore-use-case-index-delete[]
-DELETE tp_elastic_gstore_*
-// end::dml-playstore-use-case-index-delete[]
-
 Créer l'index
 
 // tag::dml-playstore-use-case-index-create-v2[]
@@ -522,6 +514,7 @@ PUT tp_elastic_gstore_v3
 POST /_aliases
 {
     "actions" : [
+        { "remove": { "index" : "tp_elastic_gstore_v2", "alias" : "tp_elastic_gstore" } },
         { "add" : { "index" : "tp_elastic_gstore_v3", "alias" : "tp_elastic_gstore" } }
     ]
 }
@@ -693,6 +686,7 @@ Créer alias
 POST /_aliases
 {
     "actions" : [
+        { "remove": { "index" : "tp_elastic_gstore_v3", "alias" : "tp_elastic_gstore" } },
         { "add" : { "index" : "tp_elastic_gstore_v4", "alias" : "tp_elastic_gstore" } }
     ]
 }
@@ -852,12 +846,13 @@ PUT tp_elastic_gstore_v5
 
 
 * Créer alias
-    * L'alias tp_elastic_gstore va pointer sur l'index tp_elastic_gstore_v5
+** L'alias tp_elastic_gstore va pointer sur l'index tp_elastic_gstore_v5
 
 // tag::dml-playstore-use-case-index-alias-v5[]
 POST /_aliases
 {
     "actions" : [
+        { "remove": { "index" : "tp_elastic_gstore_v4", "alias" : "tp_elastic_gstore" } },
         { "add" : { "index" : "tp_elastic_gstore_v5", "alias" : "tp_elastic_gstore" } }
     ]
 }

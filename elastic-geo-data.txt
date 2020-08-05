@@ -1,0 +1,143 @@
+
+[[chapter-correction-geo-data]]
+= Les données géographiques
+
+[[correction-geo-data-parag-data-load]]
+== Chargement des données
+
+
+
+[[correction-geo-data-parag-queries]]
+== Requêtes
+
+- Votre entreprise est à Lille et souhaite vous envoyer à une formation elasticsearch (champ cible course) sans dépasser un rayon de 240 kilomètres autour du siège social (coordonnées de Lille: 50.63297, 3.05858).
+Quels sont les localisations géographiques éligibles à cette contrainte ?
+
+// tag::correction-geo-data-parag-queries-query-one[]
+GET /tp_elastic_formations/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match_all": {}
+        }
+      ],
+      "filter": {
+        "geo_distance": {
+          "distance": "240km",
+          "location": {
+            "lat": 50.63297,
+            "lon": 3.05858
+          }
+        }
+      }
+    }
+  }
+}
+// end::correction-geo-data-parag-queries-query-one[]
+
+
+- La requête de type géolocalisation ne devrait pas fonctionner. Quel est le problème ?
+
+* Diagnostic du problème
+Faites un GET sur l'index pour constater de visu la structure inférée pour le type location
+
+// tag::correction-geo-data-parag-queries-query-one-diagnostic[]
+GET tp_elastic_formations
+// end::correction-geo-data-parag-queries-query-one-diagnostic[]
+
+* Si on isole la partie spécifique au type location, on constate qu'il est créé [comme un objet](https://www.elastic.co/guide/en/elasticsearch/reference/current/object.html)
+
+// tag::correction-geo-data-parag-queries-query-one-json-fragment[]
+  "location": {
+    "properties": {
+      "lat": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "lon": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      }
+    }
+  }
+// end::correction-geo-data-parag-queries-query-one-json-fragment[]
+
+
+// tag::correction-geo-data-parag-queries-delete-index[]
+DELETE tp_elastic_formations
+// end::correction-geo-data-parag-queries-delete-index[]
+
+// tag::correction-geo-data-parag-queries-create-index[]
+PUT tp_elastic_formations
+{
+  "mappings": {
+      "properties": {
+        "course" :
+        {
+          "type" : "text",
+          "fields" :
+          {
+            "key" :
+            {
+              "type" : "keyword"
+            }
+          }
+        },
+        "start_date" : {"type" : "date"},
+        "end_date" : {"type" : "date"},
+        "country" : {"type" : "keyword"},
+        "city" : {"type" : "keyword"},
+        "location": {
+          "type": "geo_point"
+        }
+      }
+  }
+}
+// end::correction-geo-data-parag-queries-create-index[]
+
+
+- Ecrivez une requête qui répond à ce besoin fonctionnel ...
+Il s'agit bien entendu d'une decay_function
+* l'offset vous a été donné
+* le scale et le decay sont à préciser avec le métier
+
+// tag::correction-geo-data-parag-queries-query-with-decay-function[]
+GET tp_elastic_formations/_search
+{
+  "query":
+  {
+    "function_score": {
+      "query":
+      {
+        "match": {
+          "course": "elasticsearch"
+        }
+      },
+      "functions": [
+        {
+          "gauss": {
+            "location": {
+              "origin": "50.633307,3.020001",
+              "scale": "50km",
+              "offset": "200km",
+              "decay": 0.5
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+// end::correction-geo-data-parag-queries-query-with-decay-function[]

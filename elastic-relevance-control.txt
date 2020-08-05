@@ -1,0 +1,203 @@
+
+[[chapter-correction-relevance-control]]
+= Contrôle de la pertinence
+
+
+[[chapter-correction-relevance-control-user-ranking]]
+== Contrôle du score par un ranking utilisateur (like, rating, …)
+
+=== Chargement du fichier de travail
+
+// tag::relevance-control-user-ranking-test-case-loading-instruction[]
+Voir paragraphe précédent <<correction-dml-google-playstore-use-case-queries-tp-elastic-gstore-v5,Autocompletion>>
+// end::relevance-control-user-ranking-test-case-loading-instruction[]
+
+=== Contrôle du score par un ranking utilisateur (like, rating, …)
+
+
+
+1-
+Requête multi_match best_fields sur les tokens diabete ou diabetes
+// tag::relevance-control-user-ranking-query-one-without-control[]
+GET /tp_elastic_gstore/_search
+{
+  "query":
+  {
+    "multi_match": {
+      "query": "diabete",
+      "fields": ["app_name","app_name.english"]
+    }
+  }
+}
+// end::relevance-control-user-ranking-query-one-without-control[]
+
+2-
+L'identifiant est variable. Notez le score et le rating du premier élément. Ils devraient être de
+* rating 0.0
+* score 8.466572
+
+
+3-
+Pour ce cas d'utilisation, une function score avec un field value factor sur le rating est une solution
+Ci-dessous, requête multi_match best_fields sur le token diabete encapsulée par une function_score de type fieldValueFactore
+
+// tag::relevance-control-user-ranking-query-two-with-control[]
+GET /tp_elastic_gstore/_search
+{
+  "query":
+  {
+    "function_score": {
+      "query":
+      {
+        "multi_match": {
+          "query": "diabete",
+          "fields": ["app_name","app_name.english"]
+        }
+      },
+      "functions": [
+        {
+          "field_value_factor": {
+            "field": "rating"
+          }
+        }
+      ],
+      "boost_mode": "multiply"
+    }
+  }
+}
+// end::relevance-control-user-ranking-query-two-with-control[]
+
+
+4-
+L'élément qui remontait en premier remonte maintenant en 10eme position car il a un rating nul.
+
+[[chapter-correction-relevance-control-price]]
+== Contrôle du score par un prix
+
+=== Chargement des données
+
+// tag::relevance-control-price-test-case-data-instructions[]
+
+La requête pour le chargement vous est fourni.
+
+// https://www.dropbox.com/s/4io0wqx3f3jyc0r/relevance-control-price-test-case-data.txt?dl=0
+// https://tinyurl.com/y2wc9ldn : relevance-control-price-test-case-data
+Récupérer la query https://tinyurl.com/y2wc9ldn[en ligne] : https://tinyurl.com/y2wc9ldn
+
+Executer-là pour charger le jeu d'essai
+// end::relevance-control-price-test-case-data-instructions[]
+
+
+
+// tag::relevance-control-price-test-case-data[]
+POST  tp_elastic_formations/_bulk
+{ "index": { "_id":1}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-09-16", "end_date" : "2019-09-17", "city" : "Zurich", "country" : "Switzerland","location" : {"lat":"47.3769","lon":"8.5417"},"price" : 2000}
+{ "index": { "_id":3}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-06-17", "end_date" : "2019-06-18", "city" : "Brussels", "country" : "Belgium","location" : {"lat":"50.85045","lon":"4.34878"},"price" : 2100}
+{ "index": { "_id":5}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-07-22", "end_date" : "2019-07-23", "city" : "London", "country" : "UK","location" : {"lat":"51.50853","lon":"-0.12574"},"price" : 2200}
+{ "index": { "_id":7}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-09-23", "end_date" : "2019-09-24", "city" : "Paris", "country" : "France","location" : {"lat":"48.85341","lon":"2.3488"},"price" : 2300}
+{ "index": { "_id":9}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-08-19", "end_date" : "2019-08-20", "city" : "Istamboul", "country" : "Turkey","location" : {"lat":"41.01384","lon":"28.94966"},"price" : 2400}
+{ "index": { "_id":11}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-07-15", "end_date" : "2019-07-16", "city" : "Amsterdam", "country" : "Netherlands","location" : {"lat":"52.37403","lon":"4.88969"},"price" : 2800}
+{ "index": { "_id":13}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-09-02", "end_date" : "2019-09-03", "city" : "Frankfurt", "country" : "Germany","location" : {"lat":"50.11552","lon":"8.68417"},"price" : 1900}
+{ "index": { "_id":15}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-09-30", "end_date" : "2019-10-01", "city" : "Milan", "country" : "Italy","location" : {"lat":"45.46427","lon":"9.18951"},"price" : 1800}
+{ "index": { "_id":17}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-07-01", "end_date" : "2019-07-02", "city" : "Hamburg", "country" : "Germany","location" : {"lat":"53.57532","lon":"10.01534"},"price" : 1700}
+{ "index": { "_id":19}}
+{"course" : "Elasticsearch Engineer I", "start_date" : "2019-07-01", "end_date" : "2019-07-02", "city" : "Dublin", "country" : "Ireland","location" : {"lat":"53.33306","lon":"-6.24889"},"price" : 5000}
+// end::relevance-control-price-test-case-data[]
+
+
+=== Requêtes
+
+- 2
+
+La fonction adéquate est une decay function. L'astuce est de prendre
+* une origine à zéro
+* un offset égal à la borne à partir de laquelle le prix commence à baisser, dans notre cas 2000 €
+* Pas de contraintes particulières sur le scale et le decay. Ce sont des variables qui doivent faire l'objet de tests en collaboration avec le métier.
+
+- sans sort
+
+// tag::relevance-control-price-query-one-without-sort[]
+GET tp_elastic_fct_decay/_search
+{
+  "size": 20,
+  "query":
+  {
+    "function_score": {
+      "query":
+      {
+        "match": {
+          "course": "elasticsearch"
+        }
+      },
+      "functions": [
+        {
+          "linear": {
+            "price": {
+              "origin": "0",
+              "offset": "2000",
+              "scale": "200",
+              "decay": 0.8
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+// end::relevance-control-price-query-one-without-sort[]
+
+
+
+
+- avec sort sur le score puis sur le prix
+
+// tag::relevance-control-price-query-two-with-sort[]
+GET tp_elastic_fct_decay/_search
+{
+  "size": 20,
+  "sort": [
+    {
+      "_score": {
+        "order": "desc"
+      },
+      "price":
+      {
+        "order": "asc"
+      }
+    }
+  ],
+  "query":
+  {
+    "function_score": {
+      "query":
+      {
+        "match": {
+          "course": "elasticsearch"
+        }
+      },
+      "functions": [
+        {
+          "linear": {
+            "price": {
+              "origin": "0",
+              "offset": "2000",
+              "scale": "200",
+              "decay": 0.8
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+// end::relevance-control-price-query-two-with-sort[]
+
