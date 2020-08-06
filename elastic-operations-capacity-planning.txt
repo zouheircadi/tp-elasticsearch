@@ -3,7 +3,7 @@
 // tag::elastic-ops-cp-create-template[]
 PUT /_template/template_capacity_planning
 {
-  "index_patterns" : ["tp_elastic_gstore_*"],
+  "index_patterns" : ["tp_elastic_g*"],
   "settings":
   {
     "number_of_shards": 1,
@@ -13,8 +13,6 @@ PUT /_template/template_capacity_planning
 // end::elastic-ops-cp-create-template[]
 
 
-???
-
 ##### Load Data
 
 // tag::elastic-ops-cp-load-data[]
@@ -23,22 +21,19 @@ PUT /_template/template_capacity_planning
 
 ##### Index check
 
-// tag::elastic-ops-cp-head-index-v1[]
-HEAD tp_elastic_gstore_v1
-// end::elastic-ops-cp-head-index-v1[]
-
 
 ##### Mapping control
-```
-GET tp_elastic_gstore_v1
-```
-* Le mapping est inféré. Il est représenté ci-dessous (partie mappings). Tous les champs de type text ont un double mapping text et keyword limité à 256 caractères
-* Notez également que le contrôle de l'existence de l'index est implicite avec cette requête. Si l'index n'existait pas, nous aurions obtenu une erreur index_not_found_exception (code HTTP 404). Nous aurions donc pû faire d'une pierre deux coups.
+// tag::elastic-ops-cp-index-get[]
+GET tp_elastic_gstore
+// end::elastic-ops-cp-index-get[]
 
-```json
+
+// tag::elastic-ops-cp-index-infered-mapping[]
 {
   "tp_elastic_gstore_v1" : {
-    "aliases" : { },
+    "aliases" : {
+      "tp_elastic_gstore" : { }
+    },
     "mappings" : {
       "properties" : {
         "@timestamp" : {
@@ -138,68 +133,69 @@ GET tp_elastic_gstore_v1
           }
         }
       }
+    },
+    "settings" : {
+      "index" : {
+        "creation_date" : "1596654184472",
+        "number_of_shards" : "1",
+        "number_of_replicas" : "1",
+        "uuid" : "XQc5AfAQQ6aB5aRzvJuquA",
+        "version" : {
+          "created" : "7030199"
+        },
+        "provided_name" : "tp_elastic_gstore_v1"
+      }
     }
   }
 }
-```
+// end::elastic-ops-cp-index-v0-infered-mapping[]
 
 ##### Count
-```
-GET tp_elastic_gstore_cp/_count
-```
+// tag::elastic-ops-cp-index-count[]
+GET tp_elastic_gstore/_count
+// end::elastic-ops-cp-index-count[]
 
 ##### flush
-```
-GET tp_elastic_gstore_cp/_flush
-```
+// tag::elastic-ops-cp-index-flush[]
+GET tp_elastic_gstore/_flush
+// end::elastic-ops-cp-index-flush[]
 
 ###### force merge pour ne plus avoir qu'un seul segment
-```
-POST /tp_elastic_gstore_cp1/_forcemerge?max_num_segments=1
-```
+// tag::elastic-ops-cp-index-force-merge[]
+POST /tp_elastic_gstore/_forcemerge?max_num_segments=1
+// end::elastic-ops-cp-index-force-merge[]
 
-##### Nouveau flush
-```
-GET tp_elastic_gstore_cp/_flush
-```
 
 #### Faites une statistique rapide de la taille de l'unique shard pour cet index (api _cat)
 
 ##### Query
-```
-GET /_cat/shards/tp_elastic_gstore_cp?v
-```
+// tag::elastic-ops-cp-index-cat-on-shards-query[]
+GET /_cat/shards/tp_elastic_gstore?v&h=index,shard,prirep,state,docs,store
+// end::elastic-ops-cp-index-cat-on-shards-query[]
 
 ##### Réponse
-```
-index                 shard prirep state     docs  store ip        node
-tp_elastic_gstore_cp 0     p      STARTED 100000 18.2mb 127.0.0.1 iPro-de-zouheir
-```
+// tag::elastic-ops-cp-index-v0-cat-on-shards-answer[]
+index                shard prirep state     docs  store
+tp_elastic_gstore_v0 0     p      STARTED 100000 14.5mb
+// end::elastic-ops-cp-index-v0-cat-on-shards-answer[]
+
 
 #### Faites une statistique détaillée des caractéristiques de ce index (api _stats)
 
+// tag::elastic-ops-cp-index-stats-query[]
+GET /tp_elastic_gstore/_stats
+// end::elastic-ops-cp-index-stats-query[]
 
-```
-GET /tp_elastic_gstore_cp/_stats
-```
-
-* Contrôler bien qu'il ne reste plus qu'un seul segment
-* Récupérer la taille des documents (champ "size_in_bytes")
 
 
 #### Résultats
-L'idée n'est pas d'avoir exactement les mêmes chiffres mais plutot de comparer la variation de la taille en fonction de différents types d'indexation.
 
-* ES Version 7.3.1
-    *  100.000        =>  17522189 bytes
-    *  100.000.000    =>  (17522189*1000) / (1024*1024*1024) = 16,3  gb
-    *  pendant  30 jours 480 gb
+// tag::elastic-ops-cp-index-stats-synthetic-results[]
+**  100.000 documents      =>  15108285  bytes
+**  100.000.000 documents  =>  (15108285*1000) / (1024*1024*1024) = 14,07  gb
+**  pendant  30 jours      => 422 gb
+// end::elastic-ops-cp-index-stats-synthetic-results[]
 
-
-* ES Version 7.6.2
-    *  100.000        =>  17049761 bytes
-    *  100.000.000    =>  (17049761*1000) / (1024*1024*1024) = 15,9  gb
-    *  pendant  30 jours 476 gb
 
 
 ### Index personnalisé 2
@@ -207,13 +203,13 @@ L'idée n'est pas d'avoir exactement les mêmes chiffres mais plutot de comparer
 Pour les index dont le mapping n'est pas inféré (au moins en partie), la procédure est la suivante
 
 ##### Supprimer les index précédents
-```
-DELETE tp_elastic_gstore_c*
-```
+// tag::elastic-ops-cp-index-delete[]
+DELETE tp_elastic_gstore_v*
+// end::elastic-ops-cp-index-delete[]
 
 ##### Créer l'index avec le mapping fourni
 ```json
-PUT tp_elastic_gstore_cpx
+PUT tp_elastic_gstore_vx
 {
   "mappings":
   {
@@ -227,15 +223,45 @@ PUT tp_elastic_gstore_cpx
 
 ##### Créer l'alias
 * Remplacer le x par la version de l'index testé
-```
+
+// tag::elastic-ops-cp-index-alias-v1[]
 POST /_aliases
 {
     "actions" : [
-        { "add" : { "index" : "tp_elastic_gstore_cpx", "alias" : "tp_elastic_gstore_cp" } }
+        { "add" : { "index" : "tp_elastic_gstore_v1", "alias" : "tp_elastic_gstore" } }
     ]
 }
-```
+// end::elastic-ops-cp-index-alias-v1[]
 
+
+// tag::elastic-ops-cp-index-alias-v2[]
+POST /_aliases
+{
+    "actions" : [
+        { "add" : { "index" : "tp_elastic_gstore_v2", "alias" : "tp_elastic_gstore" } }
+    ]
+}
+// end::elastic-ops-cp-index-alias-v2[]
+
+
+// tag::elastic-ops-cp-index-alias-v5[]
+POST /_aliases
+{
+    "actions" : [
+        { "add" : { "index" : "tp_elastic_gstore_v5", "alias" : "tp_elastic_gstore" } }
+    ]
+}
+// end::elastic-ops-cp-index-alias-v5[]
+
+
+// tag::elastic-ops-cp-index-alias-v0[]
+POST /_aliases
+{
+    "actions" : [
+        { "add" : { "index" : "tp_elastic_gstore_v0", "alias" : "tp_elastic_gstore" } }
+    ]
+}
+// end::elastic-ops-cp-index-alias-v0[]
 
 ##### Charger les données
 ```shell script
@@ -257,7 +283,6 @@ Pour l'index personnalisé 2, les résultats sont indiqués ci-dessous
 
 
 ### Index personnalisé 3
-
 * 7.3.1
     *  100.000        =>  27879840  bytes
     *  100.000.000    =>  (27879840*1000) / (1024*1024*1024) = 25,96  gb
@@ -270,7 +295,6 @@ Pour l'index personnalisé 2, les résultats sont indiqués ci-dessous
 
 
 ### Index personnalisé 4
-
 * 7.3.1
     *  100.000        =>  15108285  bytes
     *  100.000.000    =>  (15108285*1000) / (1024*1024*1024) = 14,07  gb
@@ -282,26 +306,63 @@ Pour l'index personnalisé 2, les résultats sont indiqués ci-dessous
     *  pendant  30 jours 410 gb
 
 
+### Mapping inféré
+* ES Version 7.3.1
+    *  100.000            =>  17522189 bytes
+    *  100.000.000        =>  (17522189*1000) / (1024*1024*1024) = 16,3  gb
+    *  pendant  30 jours  =>  489 gb
+
+* ES Version 7.6.2
+    *  100.000        =>  17049761 bytes
+    *  100.000.000    =>  (17049761*1000) / (1024*1024*1024) = 15,9  gb
+    *  pendant  30 jours 476 gb
+
+
 ### Bilan
 Bilan des résultats (version ES 7.6.2)
 
-|        Type de mapping              | Numéro index  | Espace disque (GB)  |
-| ----------------------------- |:-------------:|:-------------:|
-| Mapping personnalisé simple   | Exercice 4    |    410        |
-| Mapping inféré                | Exercice 1    |    476        |
-| Mapping mixte(*) simple          | Exercice 2    |    480        |
-| Mapping mixte(*) complexe        | Exercice 3    |    750        |
+|===
+|Type de mapping | Numéro index | Espace disque (GB)
+
+| Mapping personnalisé simple
+| Test 1
+| 410
+
+| Mapping inféré
+| Test 2
+| 476
+
+| Mapping mixte simple
+| Test 3
+| 480
+
+| Mapping mixte complexe
+| Test 4
+| 750
+|===
+
+
+// tag::elastic-ops-synthese[]
+|===
+|Type de mapping | Test | Espace disque (GB)
+
+| Mapping personnalisé simple
+| Test 1
+| 422
+
+| Mapping inféré
+| Test 2
+| 489
+
+| Mapping mixte simple
+| Test 3
+| 499
+
+| Mapping mixte complexe
+| Test 4
+| 779
+|===
 
 (*) : Mapping mixte = Mapping personnalisé pour certains champs et inféré pour les autres.
+// end::elastic-ops-synthese[]
 
-
-### Conclusion
-On constate donc que plus le mapping est sophistiqué, plus l'index occupera de l'espace sur disque. La structure d'un index dépend évidemment des besoins métiers et techniques (la désactivation de certains éléments de mapping peut permettre de gagner de l'espace mais supprime certaines fonctionnalités). Nous avons toutefois démontré via cet exercice que la complexité éventuelle du schéma aura un impact pouvant aller du simple au double sur le volume de l'index. Il faudra donc bien veiller à éviter les fioritures superflux si la taille est un enjeu tout en respectant les besoins métiers.
-
-Par ailleurs, ce test est une des premières étapes du Capacity Planning.
-
-Voici quelques autres remarques ou points d'attention
-* Ne vous fiez pas aux ratios. Faites des tests avec des données et un mapping analogues à la production.
-* Pensez à bien passer l'option max_num_segments=1 dans le forcemerge et à contrôler via l'api _stats que l'index n'est constitué que d'un seul segment. Vous comparerez ainsi des index ayant exactement la même structure interne.
-* L'exercice proposé est un cas d'école. Pour un test de sizing, essayez d'injecter une quantité importante et non redondante de données (le plus possible tout en restant sur des temps de chargement raisonnables) afin de minimiser l'effet de la compression des données.
-* L'infrastructure doit être identique à la production (OS, versions d'Elasticsearch, ...)

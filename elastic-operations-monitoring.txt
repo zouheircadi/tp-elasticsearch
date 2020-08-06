@@ -1,0 +1,108 @@
+[[chapter-elastic-ops-monitoring]]
+
+// tag::elastic-ops-monitoring-template-config-file-monitored[]
+node.name: node-<X>
+cluster.name: production-mode
+
+network.host: [<MONITORED-CLUSTER-IP>,_local_]
+
+http.port: <X>0200
+transport.port: <X>0300
+
+discovery.seed_hosts: ["<MONITORED-CLUSTER-IP>:10300", "<MONITORED-CLUSTER-IP>:20300", "<MONITORED-CLUSTER-IP>:30300"]
+cluster.initial_master_nodes: node-1,node-2,node-3
+// end::elastic-ops-monitoring-template-config-file-monitored[]
+
+
+
+
+
+// tag::elastic-ops-monitoring-kibana-monitored-instances[]
+elasticsearch.hosts: ["http://0.0.0.0:10200","http://0.0.0.0:20200","http://0.0.0.0:30200"]
+// end::elastic-ops-monitoring-kibana-monitored-instances[]
+
+
+// tag::elastic-ops-monitoring-kibana-enable-data-collection[]
+PUT _cluster/settings
+{
+  "persistent": {
+    "xpack.monitoring.collection.enabled": true
+  }
+}
+// end::elastic-ops-monitoring-kibana-enable-data-collection[]
+
+
+// tag::elastic-ops-monitoring-activate-es-xpack-module[]
+metricbeat modules enable elasticsearch-xpack
+// end::elastic-ops-monitoring-activate-es-xpack-module[]
+
+// tag::elastic-ops-monitoring-config-file-elasticsearch-xpack-yml[]
+# Module: elasticsearch
+# Docs: https://www.elastic.co/guide/en/beats/metricbeat/7.3/metricbeat-module-elasticsearch.html
+
+- module: elasticsearch
+  metricsets:
+    - ccr
+    - cluster_stats
+    - index
+    - index_recovery
+    - index_summary
+    - ml_job
+    - node_stats
+    - shard
+  period: 10s
+  hosts: ["http://0.0.0.0:10200", "http://0.0.0.0:20200", "http://0.0.0.0:30200""]
+  #username: "user"
+  #password: "secret"
+  xpack.enabled: true
+// end::elastic-ops-monitoring-config-file-elasticsearch-xpack-yml[]
+
+
+
+// tag::elastic-ops-monitoring-metricbeat-command-disable-system[]
+metricbeat modules disable system
+// end::elastic-ops-monitoring-metricbeat-command-disable-system[]
+
+// tag::elastic-ops-monitoring-metricbeat-config-file[]
+#-------------------------- Elasticsearch output ------------------------------
+output.elasticsearch:
+  # Array of hosts to connect to.
+  #hosts: ["localhost:9200"]
+  hosts: ["http://<MONITORING-CLUSTER-IP>:10200", "http://<MONITORING-CLUSTER-IP>:20200"]
+// end::elastic-ops-monitoring-metricbeat-config-file[]
+
+
+
+// tag::elastic-ops-monitoring-start-metric-beat[]
+sudo chown root metricbeat.yml
+sudo chown root modules.d/system.yml
+sudo ./metricbeat -e
+// end::elastic-ops-monitoring-start-metric-beat[]
+
+
+=== Cluster de monitoring
+
+// tag::elastic-ops-monitoring-template-config-file-monitoring[]
+cluster.name: monitoring
+node.name: es-mon-<X>
+http.port: <X>0200
+transport.port: <X>0300
+network.host: [<MONITORING-CLUSTER-IP>,_local_]
+
+discovery.seed_hosts: ["<MONITORING-CLUSTER-IP>:10300", "<MONITORING-CLUSTER-IP>:20300"]
+cluster.initial_master_nodes: es-mon-1,es-mon-2
+// end::elastic-ops-monitoring-template-config-file-monitoring[]
+
+// tag::elastic-ops-monitoring-kibana-monitoring-instances[]
+elasticsearch.hosts: ["http://localhost:10200","http://localhost:20200"]
+// end::elastic-ops-monitoring-kibana-monitoring-instances[]
+
+
+// tag::elastic-ops-monitoring-kibana-disable-data-collection[]
+PUT _cluster/settings
+{
+  "persistent": {
+    "xpack.monitoring.collection.enabled": false
+  }
+}
+// end::elastic-ops-monitoring-kibana-dinable-data-collection[]
