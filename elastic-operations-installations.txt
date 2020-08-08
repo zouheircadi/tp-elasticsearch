@@ -1,0 +1,652 @@
+[[chapter-elastic-ops-installations]]
+= Installations
+
+
+
+
+
+
+
+[[chapter-elastic-ops-autoclustering]]
+== Mode autoclustering
+
+
+Démarrez les serveurs les uns après les autres
+
+
+En  utilisant <<annexe-cat-api-prg-use,l'API _cat>>, contrôlez la "santé" du cluster (cluster health)
+
+// tag::elastic-ops-installations-cat-query-health[]
+curl  "http://localhost:9200/_cat/health?v&h=timestamp,cluster,status,node.total,node.data"
+// end::elastic-ops-installations-cat-query-health[]
+
+* Réponse
+
+// tag::elastic-ops-installations-cat-query-health-response[]
+timestamp cluster             status node.total node.data
+14:41:52  autoclustering-mode green           3         3
+// end::elastic-ops-installations-cat-query-health-response[]
+
+
+// tag::elastic-ops-installations-cat-query-nodes[]
+curl  "http://localhost:9200/_cat/nodes?v&h=ip,node.role,master,name"
+// end::elastic-ops-installations-cat-query-nodes[]
+
+// tag::elastic-ops-installations-cat-query-nodes-response[]
+ip           node.role master name
+<IP_ADDRESS>   dim       *      node-1
+<IP_ADDRESS>   dim       -      node-2
+<IP_ADDRESS>   dim       -      node-3
+// end::elastic-ops-installations-cat-query-nodes-response[]
+
+
+
+[[chapter-elastic-ops-production]]
+== Mode production
+
+// tag::elastic-ops-installations-prod-mode-config-node-1[]
+node.name: node-1
+cluster.name: production-mode
+
+network.host: [<IP_ADDRESS>,_local_]
+
+http.port: 10200
+transport.port: 10300
+
+discovery.seed_hosts: ["<IP_ADDRESS>:10300", "<IP_ADDRESS>:20300", "<IP_ADDRESS>:30300"]
+cluster.initial_master_nodes: node-1,node-2,node-3
+// end::elastic-ops-installations-prod-mode-config-node-1[]
+
+
+// tag::elastic-ops-installations-prod-mode-config-node-2[]
+node.name: node-2
+cluster.name: production-mode
+
+network.host: [<IP_ADDRESS>,_local_]
+
+http.port: 20200
+transport.port: 20300
+
+discovery.seed_hosts: ["<IP_ADDRESS>:10300", "<IP_ADDRESS>:20300", "<IP_ADDRESS>:30300"]
+cluster.initial_master_nodes: node-1,node-2,node-3
+// end::elastic-ops-installations-prod-mode-config-node-2[]
+
+
+// tag::elastic-ops-installations-prod-mode-config-node-3[]
+node.name: node-3
+cluster.name: production-mode
+
+network.host: [<IP_ADDRESS>,_local_]
+
+http.port: 30200
+transport.port: 30300
+
+discovery.seed_hosts: ["<IP_ADDRESS>:10300", "<IP_ADDRESS>:20300", "<IP_ADDRESS>:30300"]
+cluster.initial_master_nodes: node-1,node-2,node-3
+// end::elastic-ops-installations-prod-mode-config-node-3[]
+
+
+=== Démarrage premier noeud
+
+
+Essayer d'afficher l'état du cluster
+
+* Query
+
+// tag::elastic-ops-installations-prod-mode-cat-query-health[]
+curl  "http://localhost:10200/_cat/health"
+// end::elastic-ops-installations-prod-mode-cat-query-health[]
+
+
+* Réponse
+
+// tag::elastic-ops-installations-prod-mode-cat-query-health-response[]
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "master_not_discovered_exception",
+        "reason": null
+      }
+    ],
+    "type": "master_not_discovered_exception",
+    "reason": null
+  },
+  "status": 503
+}
+// end::elastic-ops-installations-prod-mode-cat-query-health-response[]
+
+=== Démarrage deuxième noeud
+
+// tag::elastic-ops-installations-prod-mode-start-node-2-logs[]
+[2020-05-31T17:46:08,596][INFO ][o.e.c.s.ClusterApplierService] [node-1] master node changed {previous [], current [{node-1}...
+// end::elastic-ops-installations-prod-mode-start-node-2-logs[]
+
+
+Afficher le nombre de noeuds du cluster
+
+// tag::elastic-ops-installations-cat-query-nodes-port-10200[]
+curl  "http://localhost:10200/_cat/nodes?v&h=ip,node.role,master,name"
+// end::elastic-ops-installations-cat-query-nodes-port-10200[]
+
+* Réponse
+
+// tag::elastic-ops-installations-prod-mode-cat-query-nodes-response-node-1-2[]
+ip            node.role  master  name
+<IP_ADDRESS>   dim        -      node-2
+<IP_ADDRESS>   dim        *      node-1
+// end::elastic-ops-installations-prod-mode-cat-query-nodes-response-node-1-2[]
+
+=== Démarrage troisième noeud
+
+Lancez le node 3
+
+
+* Réponse
+
+// tag::elastic-ops-installations-prod-mode-cat-query-nodes-response-node-1-2-3[]
+ip           heap.percent ram.percent cpu node.role master name
+<IP_ADDRESS>           29          97   3 dim       -      node-3
+<IP_ADDRESS>           31          97   3 dim       -      node-2
+<IP_ADDRESS>           37          97   3 dim       *      node-1
+// end::elastic-ops-installations-prod-mode-cat-query-nodes-response-node-1-2-3[]
+
+
+
+[[chapter-elastic-ops-shards-and-replicas]]
+== Shards et replicas
+
+
+[[chapter-elastic-ops-shards-and-replicas-creation]]
+=== Création d'un index
+
+
+
+Créez l'index ci-dessous
+
+// tag::elastic-ops-installations-shard-and-replicas-create-index[]
+PUT /lg_index
+{
+  "settings":
+  {
+    "number_of_shards": 4,
+    "number_of_replicas": 1
+  }
+}
+// end::elastic-ops-installations-shard-and-replicas-create-index[]
+
+[[elastic-ops-shards-and-replicas-creation-big-file-loading]]
+
+
+
+// tag::elastic-ops-installations-cat-shards-lg-index-port-10200-query[]
+curl  "http://localhost:10200/_cat/shards/lg_index?v&h=index,shard,prirep,state,node"
+// end::elastic-ops-installations-cat-shards-lg-index-port-10200-query[]
+
+* Réponse
+
+// tag::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-all-nodes-responses[]
+index    shard prirep state          node
+lg_index 1     r      STARTED        node-4
+lg_index 1     p      STARTED        node-3
+lg_index 3     p      STARTED        node-1
+lg_index 3     r      STARTED        node-2
+lg_index 2     p      STARTED        node-1
+lg_index 2     r      STARTED        node-2
+lg_index 0     r      STARTED        node-4
+lg_index 0     p      STARTED        node-3
+// end::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-all-nodes-responses[]
+
+Conformément au script de création de l'index, il existe donc quatre shards répliqués une fois. Par ailleurs, la répartition étant aléatoire, elle ne sera pas forcément identique sur votre poste.
+
+Stoppez le noeud 4
+
+Patientez une minute puis controlez l'allocation des shards
+
+* Réponse
+
+// tag::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-node-1-2-3-responses[]
+index    shard prirep state     node
+lg_index 1     r      STARTED   node-1
+lg_index 1     p      STARTED   node-3
+lg_index 3     p      STARTED   node-1
+lg_index 3     r      STARTED   node-2
+lg_index 2     p      STARTED   node-1
+lg_index 2     r      STARTED   node-2
+lg_index 0     p      STARTED   node-3
+lg_index 0     r      STARTED   node-2
+// end::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-node-1-2-3-responses[]
+
+Stoppez le noeud 3
+
+Patientez une minute puis controlez l'allocation des shards
+
+* Réponse
+
+// tag::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-node-1-2-responses[]
+index    shard prirep state     node
+lg_index 1     p      STARTED   node-1
+lg_index 1     r      STARTED   node-2
+lg_index 3     p      STARTED   node-1
+lg_index 3     r      STARTED   node-2
+lg_index 2     p      STARTED   node-1
+lg_index 2     r      STARTED   node-2
+lg_index 0     r      STARTED   node-1
+lg_index 0     p      STARTED   node-2
+// end::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-node-1-2-responses[]
+
+
+Redémarrez le noeud 3
+
+Patientez une minute puis controlez l'allocation des shards
+
+* Réponse
+
+// tag::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-node-1-2-3-restart-responses[]
+index    shard prirep state    node
+lg_index 1     p      STARTED  node-3
+lg_index 1     r      STARTED  node-2
+lg_index 3     p      STARTED  node-1
+lg_index 3     r      STARTED  node-2
+lg_index 2     p      STARTED  node-1
+lg_index 2     r      STARTED  node-2
+lg_index 0     r      STARTED  node-1
+lg_index 0     p      STARTED  node-3
+// end::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-node-1-2-3-restart-responses[]
+
+Redémarrez le noeud 4
+
+Patientez une minute puis controlez l'allocation des shards
+
+* Réponse
+
+// tag::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-all-nodes-restart-responses[]
+index    shard prirep state    node
+lg_index 1     r      STARTED  node-4
+lg_index 1     p      STARTED  node-3
+lg_index 3     p      STARTED  node-1
+lg_index 3     r      STARTED  node-2
+lg_index 2     p      STARTED  node-1
+lg_index 2     r      STARTED  node-2
+lg_index 0     r      STARTED  node-4
+lg_index 0     p      STARTED  node-3
+// end::elastic-ops-installations-shard-and-replicas-cat-shards-lg-index-all-nodes-restart-responses[]
+
+[NOTE]
+====
+Comme vous venez de le constater, pour la configuration mise en oeuvre dans cet exercice, la distribution des shards s'adapte automatiquement aux noeuds disponibles
+====
+
+
+Stoppez les noeuds
+
+[[chapter-elastic-ops-fc-restart]]
+== full cluster restart
+
+Démarrez les noeuds 1, 2, 3 et 4. L'ordre est important car il faut démarrer en premier les noeuds de type master.
+
+[source,shell]
+[subs="verbatim,attributes"]
+----
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-1/config/elasticsearch
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-2/config/elasticsearch
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-3/config/elasticsearch
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-4/config/elasticsearch
+----
+
+
+Désactiver l'allocation des shards de type replicas
+
+[[elastic-ops-fc-restart-desactivate-replicas-allocation-listing]]
+// tag::elastic-ops-installations-fc-restart-query-set-cluster-routing-allocation-primaries[]
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.enable": "primaries"
+  }
+}
+// end::elastic-ops-installations-fc-restart-query-set-cluster-routing-allocation-primaries[]
+
+TIP: La désactivation de l'allocation des shards permet d'éviter des I/O inutiles et un gain de temps lors du redémarrage. Lorqu'un noeud sera arrêté, les shards qu'il contient auront un état _UNASSIGNED_
+
+Contrôlez le nombre de noeuds démarrés
+
+// tag::elastic-ops-installations-fc-restart-cat-nodes-query[]
+curl  "http://localhost:10200/_cat/nodes?v&h=ip,node.role,master,name"
+// end::elastic-ops-installations-fc-restart-cat-nodes-query[]
+
+
+Contrôlez la répartition des shards par noeuds
+
+* Query
+# requete commune
+
+
+* Réponse
+
+// tag::elastic-ops-installations-fc-restart-cat-shards-response-all-nodes[]
+index    shard prirep state       node
+lg_index 2     p      STARTED     node-3
+lg_index 2     r      STARTED     node-1
+lg_index 1     p      STARTED     node-2
+lg_index 1     r      STARTED     node-3
+lg_index 3     r      STARTED     node-4
+lg_index 3     p      STARTED     node-1
+lg_index 0     p      STARTED     node-4
+lg_index 0     r      STARTED     node-2
+// end::elastic-ops-installations-fc-restart-cat-shards-response-all-nodes[]
+
+TIP: Pour arrêter un noeud en production, il est souhaitable qu'il ne soit pas l'objet d'ecritures intensives et que les jobs de machine learning soient arrêtés. Et comme préconisé par la https://www.elastic.co/guide/en/elasticsearch/reference/master/restart-cluster.html#restart-cluster-full[documentation officielle], il faut faire un flush.
+
+Faites un flush
+
+
+// tag::elastic-ops-installations-flush-query[]
+curl -X POST "http://localhost:10200/_flush"
+// end::elastic-ops-installations-flush-query[]
+
+
+
+Contrôlez la répartition des shards par noeud
+
+
+
+* Réponse
+
+// tag::elastic-ops-installations-fc-restart-cat-shards-response-1-2-3[]
+index    shard prirep state      node
+lg_index 2     p      STARTED    node-3
+lg_index 2     r      STARTED    node-1
+lg_index 1     p      STARTED    node-2
+lg_index 1     r      STARTED    node-3
+lg_index 3     p      STARTED    node-1
+lg_index 3     r      UNASSIGNED
+lg_index 0     p      STARTED    node-2
+lg_index 0     r      UNASSIGNED
+// end::elastic-ops-installations-fc-restart-cat-shards-response-1-2-3[]
+
+
+Stoppez le noeud 3
+
+Contrôlez la répartition des shards par noeud
+
+
+* Réponse
+
+// tag::elastic-ops-installations-fc-restart-cat-shards-response-1-2[]
+index    shard prirep state        node
+lg_index 2     p      STARTED      node-1
+lg_index 2     r      UNASSIGNED
+lg_index 1     p      UNASSIGNED
+lg_index 1     r      UNASSIGNED
+lg_index 3     r      STARTED      node-2
+lg_index 3     p      STARTED      node-1
+lg_index 0     p      STARTED      node-2
+lg_index 0     r      UNASSIGNED
+// end::elastic-ops-installations-fc-restart-cat-shards-response-1-2[]
+
+
+Stoppez les noeuds 1 et 2
+
+TIP: Lorsqu'il ne reste pcorrige-elastic-agregations.adoclus qu'un noeud, le cluster devient injoignable car un master ne peut plus être choisi.
+
+En théorie, un full cluster restart est fait pour une opération de maintenance qui l'exige comme une montée de version majeure par exemple.
+
+Redémarrez les 4 noeuds progressivement les uns après les autres
+
+Vérifiez que les 4 noeuds sont bien démarrés
+
+* Query
+
+#elastic-ops-installations-fc-restart-cat-nodes-query[]
+
+* Réponse
+
+// tag::elastic-ops-installations-fc-restart-cat-nodes-response[]
+ip            node.role master   name
+<IP_ADDRESS>    dim       -      node-1
+<IP_ADDRESS>    dim       -      node-3
+<IP_ADDRESS>    dim       *      node-2
+<IP_ADDRESS>    di        -      node-4
+// end::elastic-ops-installations-fc-restart-cat-nodes-response[]
+
+Contrôlez la répartition des shards par noeud
+
+
+* Réponse
+
+// tag::elastic-ops-installations-fc-restart-cat-shards-response-all-nodes-restart-allocation-primaries[]
+index    shard prirep state       node
+lg_index 2     p      STARTED     node-1
+lg_index 2     r      UNASSIGNED
+lg_index 3     p      STARTED     node-1
+lg_index 3     r      UNASSIGNED
+lg_index 1     p      STARTED     node-3
+lg_index 1     r      UNASSIGNED
+lg_index 0     p      STARTED     node-2
+lg_index 0     r      UNASSIGNED
+// end::elastic-ops-installations-fc-restart-cat-shards-response-all-nodes-restart-allocation-primaries[]
+
+
+Réactivez l'allocation des shards de type replica
+
+// tag::elastic-ops-installations-fc-restart-query-set-cluster-routing-allocation-null[]
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.enable": null
+  }
+}
+// end::elastic-ops-installations-fc-restart-query-set-cluster-routing-allocation-null[]
+
+Contrôlez la répartition des shards par noeud
+
+
+* Réponse
+
+// tag::elastic-ops-installations-fc-restart-cat-shards-response-all-nodes-restart-allocation-null[]
+index    shard prirep state     node
+lg_index 2     r      STARTED   node-3
+lg_index 2     p      STARTED   node-1
+lg_index 3     r      STARTED   node-2
+lg_index 3     p      STARTED   node-1
+lg_index 1     r      STARTED   node-4
+lg_index 1     p      STARTED   node-3
+lg_index 0     r      STARTED   node-4
+lg_index 0     p      STARTED   node-2
+// end::elastic-ops-installations-fc-restart-cat-shards-response-all-nodes-restart-allocation-null[]
+
+
+[[chapter-elastic-ops-localgateway]]
+== Local gateway
+
+Pour chaque serveur
+
+* Ouvrez le fichier $INSTALL_DIR/$ES_VERSION/cluster/production/node-<X>/config/elasticsearch.yml (<X> étant une variable à remplacer par le noeud modifié)
+* Ajouter les entrées ci-dessous dans les noeuds _master eligible_
+
+// tag::elastic-ops-installations-local-gateway-config-file[]
+gateway.recover_after_data_nodes: 3
+gateway.expected_data_nodes: 4
+gateway.recover_after_time: 2m
+// end::elastic-ops-installations-local-gateway-config-file[]
+
+Démarrarez les noeuds (démarrage en mode daemon avec ecriture du PID dans un fichier)
+
+[source]
+[subs="verbatim,attributes"]
+----
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-1/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-1.pid -d
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-2/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-2.pid -d
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-3/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-3.pid -d
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-4/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-4.pid -d
+----
+
+
+TIP: Pour arrêter un noeud en production, il est souhaitable qu'il ne soit pas l'objet d'ecritures intensives et que les jobs de machine learning soient arrêtés. Et comme préconisé par la https://www.elastic.co/guide/en/elasticsearch/reference/master/restart-cluster.html#restart-cluster-full[documentation officielle], il faut faire un flush.
+
+Faites un flush
+
+[source,shell script]
+[subs="verbatim,attributes"]
+----
+elastic-ops-installations-flush-query]
+----
+
+
+Récupérez les PID des 4 process Elasticsearch et stoppez les noeuds
+
+[source,shell]
+[subs="verbatim,attributes"]
+----
+kill -15 <PID-node-1>
+kill -15 <PID-node-2>
+kill -15 <PID-node-3>
+kill -15 <PID-node-4>
+----
+
+
+Démarrez le node-1
+
+[source]
+[subs="verbatim,attributes"]
+----
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-1/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-1.pid -d
+----
+
+Démarrez le node-2
+
+[source]
+[subs="verbatim,attributes"]
+----
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-2/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-2.pid -d
+----
+
+
+
+Démarrez le node-3
+
+[source]
+[subs="verbatim,attributes"]
+----
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-3/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-3.pid -d
+----
+
+
+
+Contrôlez la bonne formation du cluster
+
+
+
+* Réponse
+
+// tag::elastic-ops-installations-local-gateway-cat-nodes-response[]
+ip                node.role master    name
+<IP_ADDRESS>         dim       *      node-1
+<IP_ADDRESS>         dim       -      node-2
+<IP_ADDRESS>         dim       -      node-3
+// end::elastic-ops-installations-local-gateway-cat-nodes-response[]
+
+
+Contrôlez l'allocation des shards
+
+* Query
+
+[source,shell script]
+[subs="verbatim,attributes"]
+----
+curl  "http://localhost:10200/_cat/shards/lg_index?v"
+----
+
+* Réponse
+
+// tag::elastic-ops-installations-local-gateway-cat-shards-response-error[]
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "cluster_block_exception",
+        "reason": "blocked by: [SERVICE_UNAVAILABLE/1/state not recovered / initialized];"
+      }
+    ],
+    "type": "cluster_block_exception",
+    "reason": "blocked by: [SERVICE_UNAVAILABLE/1/state not recovered / initialized];"
+  },
+  "status": 503
+}
+// end::elastic-ops-installations-local-gateway-cat-shards-response-error[]
+
+Vous obtenez une erreur. L'allocation est bloquée du fait de la configution de la local gateway
+
+Laissez s'écouler gateway.recover_after_time unités de temps et contrôlez de nouveau l'allocation des shards
+
+
+[source,shell script]
+[subs="verbatim,attributes"]
+----
+curl  "http://localhost:10200/_cat/shards/lg_index?v"
+----
+
+* Réponse
+
+// tag::elastic-ops-installations-local-gateway-cat-shards-response-after-recover-after-time[]
+index    shard prirep state     node
+lg_index 3     p      STARTED   node-2
+lg_index 3     r      STARTED   node-1
+lg_index 2     r      STARTED   node-3
+lg_index 2     p      STARTED   node-1
+lg_index 1     p      STARTED   node-3
+lg_index 1     r      STARTED   node-1
+lg_index 0     p      STARTED   node-2
+lg_index 0     r      STARTED   node-3
+// end::elastic-ops-installations-local-gateway-cat-shards-response-after-recover-after-time[]
+
+Démarrer le 4eme noeud
+
+[source]
+[subs="verbatim,attributes"]
+----
+./$INSTALL_DIR/$ES_VERSION/cluster/production/node-4/config/elasticsearch -p /$WHAT_EVER_FOLDER/elastic-node-4.pid -d
+----
+
+Et contrôlez immédiatement l'allocation des shards (en faisant si besoin des refresh de la requête get ci-dessous)
+
+* Query
+
+[source,shell script]
+[subs="verbatim,attributes"]
+----
+curl  "http://localhost:10200/_cat/shards/lg_index?v&h=index,shard,prirep,state,node"
+----
+
+
+* Réponse immédiatement après démarrage du noeud 4. Dès que le noeud démarre, l'allocation se fait sur les noeuds disponibles
+
+// tag::elastic-ops-installations-local-gateway-cat-shards-response-all-nodes-before-realloc[]
+index    shard prirep state       node
+lg_index 3     p      STARTED     node-2
+lg_index 3     r      STARTED     node-1
+lg_index 2     r      STARTED     node-3
+lg_index 2     p      STARTED     node-1
+lg_index 1     p      STARTED     node-3
+lg_index 1     r      RELOCATING  node-1 -> <IP_ADD> MznineowSey5FGmnUn35VA node-4
+lg_index 0     p      STARTED     node-2
+lg_index 0     r      RELOCATING  node-3 -> <IP_ADD> MznineowSey5FGmnUn35VA node-4
+// end::elastic-ops-installations-local-gateway-cat-shards-response-all-nodes-before-realloc[]
+
+* Après reallocation
+
+
+// tag::elastic-ops-installations-local-gateway-cat-shards-response-all-nodes-after-realloc[]
+index    shard prirep state    node
+lg_index 3     p      STARTED  node-2
+lg_index 3     r      STARTED  node-1
+lg_index 2     r      STARTED  node-3
+lg_index 2     p      STARTED  node-1
+lg_index 1     r      STARTED  node-4
+lg_index 1     p      STARTED  node-3
+lg_index 0     r      STARTED  node-4
+lg_index 0     p      STARTED  node-2
+// end::elastic-ops-installations-local-gateway-cat-shards-response-all-nodes-after-realloc[]
+
+

@@ -148,7 +148,7 @@ GET tp_elastic_gstore
     }
   }
 }
-// end::elastic-ops-cp-index-v0-infered-mapping[]
+// end::elastic-ops-cp-index-infered-mapping[]
 
 ##### Count
 // tag::elastic-ops-cp-index-count[]

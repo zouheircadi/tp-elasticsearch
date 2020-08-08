@@ -2,6 +2,12 @@
 
 ## Simple recovery
 
+<!---
+Missing
+## Recovery after corruption
+## Red state after nodes loss
+-->
+
 
 ##### Démarrer cluster
 
@@ -40,7 +46,7 @@ GET /_snapshot/cluster-7.x-backup
 
 ##### Créer l'index
 // tag::elastic-ops-recovery-create-recovery-index[]
-PUT /recovery_index
+PUT /lg_index
 {
   "settings":
   {
@@ -53,19 +59,19 @@ PUT /recovery_index
 
 ##### Première indexation des données
 // tag::elastic-ops-recovery-add-data[]
-./bin/logstash   -f <$PATH_TO>/ls-google-playstore.conf
+./bin/logstash   -f <$PATH_TO>/ls-google-playstore-big.conf
 // end::elastic-ops-recovery-add-data[]
 
 ##### Vérifier le nombre de documents de l'index créé. Il doit y avoir 100 000 documents
 // tag::elastic-ops-recovery-count[]
-GET /recovery_index/_count
+GET /lg_index/_count
 // end::elastic-ops-recovery-count[]
 
 ##### Premier snapshot
 // tag::elastic-ops-recovery-create-snapshot-1[]
 POST /_snapshot/cluster-7.x-backup/snapshot_1
 {
-  "indices": "recovery_index",
+  "indices": "lg_index",
   "ignore_unavailable": true,
   "include_global_state": false
 }
@@ -79,7 +85,7 @@ L'opération est bloquante en rajoutant à la fin de l'URL la chaine suivante : 
 // tag::elastic-ops-recovery-create-snapshot-2[]
 POST /_snapshot/cluster-7.x-backup/snapshot_2?wait_for_completion=true
 {
-  "indices": "recovery_index",
+  "indices": "lg_index",
   "ignore_unavailable": true,
   "include_global_state": false
 }
@@ -87,7 +93,7 @@ POST /_snapshot/cluster-7.x-backup/snapshot_2?wait_for_completion=true
 
 ##### Contrôler la distribution des shards
 // tag::elastic-ops-recovery-cat-shards[]
-GET /_cat/shards/recovery_index?v
+GET /_cat/shards/lg_index?v
 // end::elastic-ops-recovery-cat-shards[]
 
 ##### Vérifier le nombre de documents de l'index créé. Il doit y avoir 200 000 documents
@@ -95,7 +101,7 @@ GET /_cat/shards/recovery_index?v
 ##### Supprimer l'index
 
 // tag::elastic-ops-recovery-delete-index[]
-DELETE /recovery_index
+DELETE /lg_index
 // end::elastic-ops-recovery-delete-index[]
 
 ##### Restaurer l'index avec le premier snapshot
@@ -121,7 +127,252 @@ POST /_snapshot/cluster-7.x-backup/snapshot_2/_restore
 ##### Contrôler la distribution des shards
 
 
-<!---
-## Recovery after corruption
-## Red state after nodes loss
--->
+
+[[chapter-elastic-ops-maintenance-shrink]]
+== Shrink
+
+
+Supprimer puis recréez l'index ci-dessous
+
+// tag::elastic-ops-maintenance-shrink-create-index-lg-index-v1[]
+DELETE /lg_index_v1 //<1>
+
+PUT /lg_index_v1 //<2>
+{
+  "settings":
+  {
+    "number_of_shards": 4,
+    "number_of_replicas": 1
+  }
+}
+
+<1> Suppression
+<2> Création index
+// end::elastic-ops-maintenance-shrink-create-index-lg-index-v1[]
+
+
+Créez un alias sur cet index
+
+// tag::elastic-ops-maintenance-shrink-create-alias-lg-index[]
+POST /_aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "lg_index_v1",
+        "alias": "lg_index"
+      }
+    }
+  ]
+}
+// end::elastic-ops-maintenance-shrink-create-alias-lg-index[]
+
+Indexez-y 200.000 documents. Il suffit pour cela, en utilisant logstash, d'indexer 2 fois le fichier de <<elastic-ops-shards-and-replicas-creation-big-file-loading,100.000 documents>> que vous avez utilisé précédemment.
+
+Faites un flush
+
+// tag::elastic-ops-maintenance-shrink-query-flush-lg-index[]
+POST  /lg_index/_flush
+// end::elastic-ops-maintenance-shrink-query-flush-lg-index[]
+
+Faites un count du nombre de documents
+
+// tag::elastic-ops-maintenance-shrink-query-count-lg-index[]
+GET  /lg_index/_count
+// end::elastic-ops-maintenance-shrink-query-count-lg-index[]
+
+Contrôlez la distribution des shards
+
+// tag::elastic-ops-maintenance-shrink-cat-shards-lg-index-query[]
+curl  "http://localhost:10200/_cat/shards/lg_index?v&h=index,shard,prirep,state,node"
+// end::elastic-ops-maintenance-shrink-cat-shards-lg-index-query[]
+
+* Réponse
+
+// tag::elastic-ops-maintenance-shrink-cat-lg-index-response[]
+index       shard prirep state     node
+lg_index_v1 3     p      STARTED   node-4
+lg_index_v1 3     r      STARTED   node-2
+lg_index_v1 1     p      STARTED   node-1
+lg_index_v1 1     r      STARTED   node-3
+lg_index_v1 2     p      STARTED   node-3
+lg_index_v1 2     r      STARTED   node-2
+lg_index_v1 0     p      STARTED   node-4
+lg_index_v1 0     r      STARTED   node-1
+// end::elastic-ops-maintenance-shrink-cat-lg-index-response[]
+
+Passez le facteur de réplication à zéro
+
+// tag::elastic-ops-maintenance-shrink-query-settings-replicas-zero[]
+PUT /lg_index/_settings
+{
+    "index" : {
+
+    }
+}
+// end::elastic-ops-maintenance-shrink-query-settings-replicas-zero[]
+
+
+Préparez le shrink
+
+// tag::elastic-ops-maintenance-shrink-query-settings-routing.allocation.require.name[]
+PUT /lg_index/_settings
+{
+  "settings": {
+    "index.number_of_replicas" : 0, //<1>
+    "index.routing.allocation.require._name": "node-1", //<2>
+    "index.blocks.write": true  //<3>
+  }
+}
+
+<1> Passe la réplication des shards à zéro
+<2> Réallocation des shards dans un noeud déterminé (les shards primaires à modifier doivent être dans le même noeud)
+<3> L'index doit être read-only
+// end::elastic-ops-maintenance-shrink-query-settings-routing.allocation.require.name[]
+
+
+// tag::elastic-ops-maintenance-shrink-cat-lg-index-after-shrink-preparation-response[]
+index       shard prirep state   node
+lg_index_v1 2     p      STARTED node-1
+lg_index_v1 3     p      STARTED node-1
+lg_index_v1 1     p      STARTED node-1
+lg_index_v1 0     p      STARTED node-1
+// end::elastic-ops-maintenance-shrink-cat-lg-index-after-shrink-preparation-response[]
+
+
+Exécutez le shrink
+
+// tag::elastic-ops-maintenance-shrink-query-settings-execute-shrink[]
+POST lg_index_v1/_shrink/lg_index_v2 //<1>
+{
+  "settings": {
+    "index.routing.allocation.require._name": null,
+    "index.blocks.write": null,
+    "index.number_of_replicas": 0,//<2>
+    "index.number_of_shards": 2, //<3>
+    "index.codec": "best_compression"
+  }
+}
+
+<1> Le shrink crée en fait un autre index qui s'appelera lg_index_v2
+<2> Pas de replication
+<3> Le nombre de shards primaires passe de 4 à 2
+// end::elastic-ops-maintenance-shrink-query-settings-execute-shrink[]
+
+
+// tag::elastic-ops-maintenance-shrink-create-alias-lg-index-on-v2[]
+POST /_aliases
+{
+  "actions": [
+    {"remove": {
+        "index": "lg_index_v1",
+        "alias": "lg_index"
+      }
+    },
+    {"add": {
+        "index": "lg_index_v2",
+        "alias": "lg_index"
+      }
+    }
+  ]
+}
+// end::elastic-ops-maintenance-shrink-create-alias-lg-index-on-v2[]
+
+Contrôlez la distribution des shards de l'index nouvellement créé
+
+
+* Réponse
+
+// tag::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-shrink[]
+index       shard prirep state   node
+lg_index_v2 1 p STARTED   node-3
+lg_index_v2 0 p STARTED   node-4
+// end::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-shrink[]
+
+
+
+# Requete sur l'alias déjà faite
+
+Supprimez l'ancien index
+
+// tag::elastic-ops-maintenance-shrink-delete-index-lg-index-v1[]
+DELETE lg_index_v1
+// end::elastic-ops-maintenance-shrink-delete-index-lg-index-v1[]
+
+
+Décommissionez le noeud 4
+
+// tag::elastic-ops-maintenance-shrink-query-settings-decommission-allocation.exclude.name-node-4[]
+PUT _cluster/settings
+{
+  "transient" : {
+    "cluster.routing.allocation.exclude._name" : "node-4"
+  }
+}
+// end::elastic-ops-maintenance-shrink-query-settings-decommission-allocation.exclude.name-node-4[]
+
+Stoppez le noeud 4 et contrôlez la distribution des shards
+
+* Query
+
+# Déja faite
+
+* Réponse
+
+// tag::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-removing-node-4[]
+index       shard prirep state     node
+lg_index_v2 1     p      STARTED   node-3
+lg_index_v2 0     p      STARTED   node-2
+// end::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-removing-node-4[]
+
+
+
+
+Décommissionez le noeud 3
+
+// tag::elastic-ops-maintenance-shrink-query-settings-decommission-allocation.exclude.name-node-3[]
+PUT _cluster/settings
+{
+  "transient" : {
+    "cluster.routing.allocation.exclude._name" : "node-3"
+  }
+}
+// end::elastic-ops-maintenance-shrink-query-settings-decommission-allocation.exclude.name-node-3[]
+
+Stoppez le noeud 3 et contrôlez la distribution des shards
+
+* Query
+
+# Déja faite
+
+* Réponse
+
+// tag::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-removing-node-3[]
+index       shard prirep state     node
+lg_index_v2 1     p      STARTED   node-1
+lg_index_v2 0     p      STARTED   node-2
+// end::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-removing-node-3[]
+
+
+Passer le facteur de réplication à 1
+
+// tag::elastic-ops-maintenance-shrink-query-settings-replicas-one[]
+PUT /lg_index/_settings
+{
+    "index" :  {
+        "number_of_replicas" : 1
+    }
+}
+// end::elastic-ops-maintenance-shrink-query-settings-replicas-one[]
+
+
+Contrôlez la distribution des shards
+
+// tag::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-replicas-to-one[]
+index       shard prirep state    node
+lg_index_v2 1     p      STARTED  node-1
+lg_index_v2 1     r      STARTED  node-2
+lg_index_v2 0     r      STARTED  node-1
+lg_index_v2 0     p      STARTED  node-2
+// end::elastic-ops-maintenance-shrink-cat-shards-lg-index-response-after-replicas-to-one[]
+

@@ -110,32 +110,41 @@ PUT /hwcd_000001?pretty
 
 
 // tag::elastic-ops-architectures-corrections-query-ilm-cat-on-shards[]
-GET /_cat/shards/hwc*?v&h=index,shard,prirep,state,docs,store,node
+GET /_cat/shards/hwc*?v&h=index,shard,prirep,state,docs,store,node&s=node:asc
 // end::elastic-ops-architectures-corrections-query-ilm-cat-on-shards[]
 
 
 // tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-1[]
 index       shard prirep state    docs store node
-hwcd-000003 0     p      STARTED 42126   8mb node-2
 hwcd-000004 0     p      STARTED     0  230b node-1
 hwcd-000002 0     p      STARTED 25000 5.2mb node-1
 hwcd-000001 0     p      STARTED 32874 6.2mb node-1
+hwcd-000003 0     p      STARTED 42126   8mb node-2
 // end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-1[]
 
 
 // tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-2[]
 index       shard prirep state    docs store node
-hwcd-000003 0     p      STARTED 42126   7mb node-3
 hwcd-000004 0     p      STARTED     0  283b node-1
+hwcd-000003 0     p      STARTED 42126   7mb node-3
 hwcd-000002 0     p      STARTED 25000 4.4mb node-3
 hwcd-000001 0     p      STARTED 32874 5.6mb node-3
 // end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-2[]
 
 
 // tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-3[]
+index       shard prirep state    docs store node
+hwcd-000004 0     p      STARTED     0  283b node-1
+hwcd-000003 0     p      STARTED 42126   7mb node-4
+hwcd-000002 0     p      STARTED 25000 4.4mb node-4
+hwcd-000001 0     p      STARTED 32874 5.6mb node-4
+// end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-3[]
+
+
+// tag::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-4[]
 index       shard prirep state   docs store node
 hwcd-000004 0     p      STARTED    0  283b node-1
-// end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-3[]
+// end::elastic-ops-architectures-corrections-ilm-cat-on-shards-answer-step-4[]
 
 
 // tag::elastic-ops-architectures-corrections-ilm-explain-query[]
@@ -319,9 +328,9 @@ PUT /awareness_index
 // end::elastic-ops-architectures-corrections-alloc-awareness-create-index[]
 
 
-// tag::elastic-ops-architectures-corrections-alloc-awareness-without-cat-query[]
-GET /_cat/shards/awareness_index?v&h=index,shard,prirep,state,node
-// end::elastic-ops-architectures-corrections-alloc-awareness-without-cat-query[]
+// tag::elastic-ops-architectures-corrections-alloc-awareness-cat-query[]
+GET /_cat/shards/awareness_index?v&h=index,shard,prirep,state,node&s=node:asc
+// end::elastic-ops-architectures-corrections-alloc-awareness-cat-query[]
 
 // tag::elastic-ops-architectures-corrections-alloc-awareness-without-cat-answer[]
 index           shard prirep state node
@@ -329,7 +338,6 @@ awareness_index 1     r      STARTED node-1
 awareness_index 0     p      STARTED node-1
 awareness_index 0     r      STARTED node-2
 awareness_index 1     p      STARTED node-2
-
 awareness_index 3     r      STARTED node-3
 awareness_index 2     p      STARTED node-3
 awareness_index 3     p      STARTED node-4
@@ -343,10 +351,6 @@ awareness_index 2     r      STARTED node-4
 DELETE /awareness_index
 // end::elastic-ops-architectures-corrections-alloc-awareness-with-delete-index[]
 
-// tag::elastic-ops-architectures-corrections-alloc-awareness-with-cat-query[]
-GET /_cat/shards/awareness_index?v&h=index,shard,prirep,state,node
-// end::elastic-ops-architectures-corrections-alloc-awareness-with-cat-query[]
-
 
 // tag::elastic-ops-architectures-corrections-alloc-awareness-with-cat-answer[]
 index           shard prirep state     node
@@ -354,7 +358,6 @@ awareness_index 1     p      STARTED   node-1
 awareness_index 0     r      STARTED   node-1
 awareness_index 3     p      STARTED   node-2
 awareness_index 2     r      STARTED   node-2
-
 awareness_index 2     p      STARTED   node-3
 awareness_index 1     r      STARTED   node-3
 awareness_index 0     p      STARTED   node-4
