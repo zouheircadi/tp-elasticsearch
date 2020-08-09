@@ -431,7 +431,7 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-metrics-e[]
+// end::agregations-corpus-gps-corrections-agg-metrics-g[]
 
 
 *deep metrics*

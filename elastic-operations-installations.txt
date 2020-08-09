@@ -153,6 +153,33 @@ ip           heap.percent ram.percent cpu node.role master name
 
 
 
+[[chapter-elastic-ops-add-node]]
+== Ajout d'un noeud
+
+
+// tag::elastic-ops-installations-prod-mode-config-node-4[]
+node.name: node-4
+cluster.name: production-mode
+
+network.host: [<IP_ADDRESS>,_local_]
+
+http.port: 40200
+transport.port: 40300
+
+discovery.seed_hosts: ["<IP_ADDRESS>:10300", "<IP_ADDRESS>:20300", "<IP_ADDRESS>:30300"]
+
+// end::elastic-ops-installations-prod-mode-config-node-4[]
+
+
+// tag::elastic-ops-installations-cat-query-nodes-response-node-4[]
+ip           node.role master name
+<IP_ADDRESS>   dim       *      node-1
+<IP_ADDRESS>   dim       -      node-2
+<IP_ADDRESS>   dim       -      node-3
+<IP_ADDRESS>   dim       -      node-4
+// end::elastic-ops-installations-cat-query-nodes-response-node-4[]
+
+
 [[chapter-elastic-ops-shards-and-replicas]]
 == Shards et replicas
 
