@@ -156,17 +156,14 @@ GET /tp_elastic_14/_search
 
 ### Recherches basiques de type filtre - 2
 
-// tag::dml-filters-212-testCase-load-link[]
-// dml-lang-spec-test-case-data.txt : https://www.dropbox.com/s/hznpce85zyfyxq9/dml-lang-spec-test-case-data.txt?dl=0
-Indexer le jeu de données disponible https://tinyurl.com/y9dbdlzr[en ligne] en mode bulk dans un nouvel index appelé tp_elastic_filter.
-// end::dml-filters-212-testCase-load-link[]
 
 //dml-lang-spec-test-case-data.txt
 ###### Données à charger avec les devTools Kibana
 // tag::dml-filters-212-testCase[]
 POST tp_elastic_filter/_doc/_bulk
-// ... data à indexer : https://tinyurl.com/y9dbdlzr
+// ... bloc data à indexer : https://tinyurl.com/y9dbdlzr
 // end::dml-filters-212-testCase[]
+
 
 Le mapping est inféré. Notez donc bien le mapping des champs contenant des chaînes de caractères. Nous avons représenté ci-dessous le mapping du champ category. Pour filtrer sur une category, il faut donc utiliser le champ category.keyword qui est de type keyword. Les champs imbriqués sous l'attribut fields sont accédés par cette notation pointée.
 

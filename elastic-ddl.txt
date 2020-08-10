@@ -1,8 +1,8 @@
 ## Gestion des index
 ### 1.1 Autocréation d’index
 
-// tag::ddl-11-CreateIndexWithDataInjection[]
-POST tp_elastic_11/_bulk
+
+// tag::ddl-data-bulk-1234[]
 { "index": { "_id": 1 }}
 {"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
 { "index": { "_id": 2 }}
@@ -15,6 +15,10 @@ POST tp_elastic_11/_bulk
 { "app_name" : "QR Code Reader", "category" : "TOOLS", "last_updated" : "2016-03-15", "rating" : 4.0}
 { "index": { "_id": 6 }}
 { "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
+// end::ddl-data-bulk-1234[]
+
+// tag::ddl-11-CreateIndexWithDataInjection[]
+POST tp_elastic_11/_bulk
 // end::ddl-11-CreateIndexWithDataInjection[]
 
 
@@ -96,18 +100,6 @@ Créer un index par injection de données avec le POST ci-dessous. L’index cr�
 
 // tag::ddl-13-createIndexFromTemplate[]
 POST /tp_elastic_13/_bulk
-{ "index": { "_id": 1 }}
-{"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
-{ "index": { "_id": 2 }}
-{ "app_name" : "YouTube Kids", "category" : "FAMILY", "last_updated" : "2018-08-02", "rating" : 4.5}
-{ "index": { "_id": 3 }}
-{ "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
-{ "index": { "_id": 4 }}
-{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
-{ "index": { "_id": 5 }}
-{ "app_name" : "QR Code Reader", "category" : "TOOLS", "last_updated" : "2016-03-15", "rating" : 4.0}
-{ "index": { "_id": 6 }}
-{ "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
 // end::ddl-13-createIndexFromTemplate[]
 
 
@@ -190,18 +182,6 @@ Indexer les données avec la requête REST ci-dessous
 
 // tag::ddl-14-loadData[]
 POST /tp_elastic_14/_bulk
-{ "index": { "_id": 1 }}
-{"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
-{ "index": { "_id": 2 }}
-{ "app_name" : "YouTube Kids", "category" : "FAMILY", "last_updated" : "2018-08-02", "rating" : 4.5}
-{ "index": { "_id": 3 }}
-{ "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
-{ "index": { "_id": 4 }}
-{ "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
-{ "index": { "_id": 5 }}
-{ "app_name" : "QR Code Reader", "category" : "TOOLS", "last_updated" : "2016-03-15", "rating" : 4.0}
-{ "index": { "_id": 6 }}
-{ "app_name" : "Diabetes:M", "category" : "MEDICAL", "last_updated" : "2018-07-31", "rating" : 4.6}
 // end::ddl-14-loadData[]
 
 // tag::ddl-14-DisplayIndexCaracteristicsQuery[]
@@ -252,8 +232,7 @@ GET /tp_elastic_14
 
 ###### Créer un premier index en mode autocréation avec la requête ci-dessous
 
-// tag::ddl-15-createIndex[]
-POST /tp_elastic_151/_bulk
+// tag::ddl-15-createIndex-data[]
 { "index": { "_id": 1 }}
 {"app_name" : "Photo Editor", "category" : "ART-AND-DESIGN", "last_updated" : "2018-01-06","rating" : 4.1}
 { "index": { "_id": 2 }}
@@ -262,6 +241,10 @@ POST /tp_elastic_151/_bulk
 { "app_name" : "Block Puzzle Classic Legend !","category" : "GAME", "last_updated" : "2018-07-22", "rating" : 4.7}
 { "index": { "_id": 4 }}
 { "app_name" : "Marble Woka Woka 2018 - Bubble Shooter Match 3", "category" : "GAME", "last_updated" : "2018-08-02","rating" : 4.6}
+// end::ddl-15-createIndex-data[]
+
+// tag::ddl-15-createIndex[]
+POST /tp_elastic_151/_bulk
 // end::ddl-15-createIndex[]
 
 ###### Créer un alias vers le 1er index
@@ -378,6 +361,26 @@ DELETE /tp_elastic_152
 // tag::ddl-16-ControlIndexDeletion[]
 HEAD /tp_elastic_152
 // end::ddl-16-ControlIndexDeletion[]
+
+
+// tag::ddl-17-create-index-tp-elastic-17[]
+PUT /tp_elastic_17
+{
+  "settings":
+  {
+    "number_of_shards": 5,
+    "number_of_replicas": 2
+  },
+  "mappings":
+  {
+    "properties":
+    {
+      "title" : {"type": "text"},
+      "description" : {"type": "text"}
+    }
+  }
+}
+// end::ddl-17-create-index-tp-elastic-17[]
 
 
 // tag::ddl-17-modifySettingsPrepareLoading[]
