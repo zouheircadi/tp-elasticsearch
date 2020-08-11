@@ -1,0 +1,836 @@
+
+// --------------------------------- //
+// --------------------------------- //
+[[annexe-debug-tools]]
+= Outillage de debug des queries
+// --------------------------------- //
+// --------------------------------- //
+
+
+[[debug-tools-prg-analyze]]
+== Analyze
+
+** Analyse d’un texte pour un champ donné de mon index, dans ce cas, le champ de nom title.shingles
+
+// tag::anx-debug-tools-analyze-field[]
+GET /my_index/_analyze
+{
+"field" : "title.shingles",
+"text" : "Je suis très content. pas de problème"
+}
+// end::anx-debug-tools-analyze-field[]
+
+** Analyse d’un texte pour un analyzer donné
+
+// tag::anx-debug-tools-analyze-analyzer[]
+GET /my_index/_analyze
+{
+"analyzer" : "standard",
+"text" : "Je suis très content. pas de problème"
+}
+// end::anx-debug-tools-analyze-analyzer[]
+
+[[debug-tools-prg-explain]]
+== Explain
+
+
+* dans la query string du endpoint _search. La décomposition du score est faite pour tous les documents recherchés
+
+// tag::anx-debug-tools-explain-search[]
+GET /my_index/_search?explain=true
+{ … <query> …}
+// end::anx-debug-tools-explain-search[]
+
+* directement via le endpoint _explain. Dans ce cas, il faut préciser dans l’URL l’identifiant du document. _doc correspond au type.
+
+// tag::anx-debug-tools-explain-docID[]
+GET /my_index/_explain/<docID>
+{ … <query> …}
+// end::anx-debug-tools-explain-docID[]
+
+[[debug-tools-prg-validate]]
+== Validate
+
+
+// tag::anx-debug-tools-validate[]
+GET /my_index/_validate/query?explain&pretty=true
+{ … <query> …}
+// end::anx-debug-tools-validate[]
+// --------------------------------- //
+// --------------------------------- //
+
+
+
+// --------------------------------- //
+// --------------------------------- //
+[[annexe-filters]]
+= Les filtres
+// --------------------------------- //
+// --------------------------------- //
+
+== Requêtes mixtes
+
+
+// tag::anx-filters-query-match-all[]
+GET /my_index_filter/_search
+{
+  "query":
+  {
+    "match_all": {}
+  }
+}
+// end::anx-filters-query-match-all[]
+
+Une query de type match_all ne calcule pas de score.
+
+Comme son nom l’indique, elle cherche tous les documents.
+
+{nbsp} +
+
+
+// tag::anx-filters-query-match-all-with-filter[]
+GET /my_index_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {
+          "match_all": {}
+        }
+      ],
+      "filter":
+      {
+        "term": {
+          "category.keyword": "MEDICAL"
+        }
+      }
+    }
+  }
+}
+// end::anx-filters-query-match-all-with-filter[]
+
+
+// tag::anx-filters-query-match-with-filter[]
+GET /my_index_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "should":
+      [
+        {
+          "match": {
+            "app_name": "photos"
+          }
+        }
+      ],
+      "filter":
+      {
+        "term": {
+          "category.keyword": "FAMILY"
+        }
+      }
+    }
+  }
+}
+// end::anx-filters-query-match-with-filter[]
+
+
+== Filtres
+
+
+// tag::anx-filters-query-term-filter[]
+GET /my_index_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "filter":
+      {
+        "term": {
+          "category.keyword": "FAMILY"
+        }
+      }
+    }
+  }
+}
+// end::anx-filters-query-term-filter[]
+
+
+
+// tag::anx-filters-query-range-filter[]
+GET /my_index_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "filter":
+      {
+        "range": {
+          "rating": {
+            "lte": 5,
+            "gte": 3
+          }
+        }
+      }
+    }
+  }
+}
+// end::anx-filters-query-range-filter[]
+
+
+
+// tag::anx-filters-query-multiple-filters[]
+GET /my_index_filter/_search
+{
+  "query":
+  {
+    "bool":
+    {
+      "filter":
+      {
+          "bool":
+          {
+
+            "should" :
+            [
+              {
+                "term": {
+                  "category.keyword": "FAMILY"
+                }
+              },
+              {
+                "range": {
+                  "rating": {
+                    "lte": 5,
+                    "gte": 3
+                  }
+                }
+              }
+            ]
+          }
+      }
+    }
+  }
+}
+// end::anx-filters-query-multiple-filters[]
+
+
+// tag::anx-filters-query-constant-score[]
+GET /my_index_filter/_search
+{
+  "query": {
+    "constant_score":
+    {
+      "filter":
+      {
+        "bool":
+        {
+          "must":
+          {
+            "term": {"category.keyword": "FAMILY"}
+          }
+        }
+      }
+    }
+  }
+}
+// end::anx-filters-query-constant-score[]
+
+// --------   FIN CHAPITRE  -------- //
+// --------------------------------- //
+// --------------------------------- //
+
+
+// --------------------------------- //
+// --------------------------------- //
+[[annexe-index-management]]
+= Gestion des index
+// --------------------------------- //
+// --------------------------------- //
+
+== Création d’un index
+
+
+
+// tag::anx-index-mgt-create-index-generic-query[]
+PUT /my_index
+{
+  "settings":
+  {
+    ...
+  },
+  "mappings":
+  {
+    ...
+  },
+  "aliases":
+  {
+    ...
+  }
+}
+// end::anx-index-mgt-create-index-generic-query[]
+
+
+// tag::anx-index-mgt-create-index-generic-response[]
+{
+   "acknowledged" : true,
+   "shards_acknowledged" : true,
+   "index" : "my_index"
+}
+// end::anx-index-mgt-create-index-generic-response[]
+
+
+
+
+=== Settings
+
+
+// tag::anx-index-mgt-create-index-settings-1-query[]
+PUT /my_index
+{
+  "settings":
+  {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  }
+}
+// end::anx-index-mgt-create-index-settings-1-query[]
+
+
+
+
+// tag::anx-index-mgt-create-index-settings-2-query[]
+PUT /my_index
+{
+  "settings":
+  {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis":
+    {
+      "analyzer":
+      {
+        "es_std" :
+        {
+          "type" : "standard",
+          "stopwords" : "_spanish_"
+        }
+      }
+    }
+  }
+}
+// end::anx-index-mgt-create-index-settings-2-query[]
+
+
+
+=== Mappings
+
+
+// tag::anx-index-mgt-create-index-mappings-1[]
+PUT /my_index
+{
+  "mappings":
+  {
+    "properties":
+    {
+      "field1" : {"type": "text"}
+    }
+  }
+}
+// end::anx-index-mgt-create-index-mappings-1[]
+
+
+
+// tag::anx-index-mgt-create-index-mappings-2[]
+PUT /my_index
+{
+  "mappings":
+  {
+    "properties":
+    {
+      "title" : {"type": "text"},
+      "name" : {"type": "keyword"},
+      "age" : {"type": "integer"},
+      "created" : {"type": "date"}
+    }
+  }
+}
+// end::anx-index-mgt-create-index-mappings-2[]
+
+
+// tag::anx-index-mgt-create-index-mappings-3[]
+PUT /my_index
+{
+  "mappings":
+  {
+    "properties":
+    {
+      "city" :
+      {
+        "type": "text"
+        "fields":
+        {
+          "english" :
+          {
+            "type" : "text",
+            "analyzer" : "english"
+          },
+            "raw" : {
+            "type" : "keyword"
+          }
+        }
+      }
+    }
+  }
+}
+// end::anx-index-mgt-create-index-mappings-3[]
+
+
+
+[[index-management-prg-index-template]]
+== Index templates
+
+
+// tag::anx-index-mgt-create-index-template[]
+PUT /_template/template_my_index
+{
+  "index_patterns" : ["prod_*","prd_*"],
+  "settings":
+  {
+    "number_of_shards": 3,
+    "number_of_replicas": 1
+  }
+}
+// end::anx-index-mgt-create-index-template[]
+
+
+== Ajout de données
+
+
+=== Ajout de données en mode bulk
+
+
+// tag::anx-index-mgt-data-load-bulk-1[]
+POST /<INDEX>/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "draw pixel art number"}
+{ "index": { "_id": 2 }}
+{"app_name" : "draw pixel number"}
+{ "index": { "_id": 3 }}
+{"app_name" : "draw figure"}
+// end::anx-index-mgt-data-load-bulk-1[]
+
+// tag::anx-index-mgt-data-load-bulk-2[]
+POST _bulk
+{ "index": { "_index" : "my_index_6" , "_id": 1 }}
+{"app_name" : "draw pixel art number"}
+// end::anx-index-mgt-data-load-bulk-2[]
+
+
+
+=== Index API
+
+// tag::anx-index-mgt-index-api-1[]
+PUT test_put/_doc/1
+{
+  "app_name" : "the best app"
+}
+// end::anx-index-mgt-index-api-1[]
+
+
+=== Get API
+
+// tag::anx-index-mgt-get-api-1[]
+GET  test_put/_doc/1
+// end::anx-index-mgt-get-api-1[]
+
+// --------   FIN CHAPITRE  -------- //
+// --------------------------------- //
+// --------------------------------- //
+
+
+// --------------------------------- //
+// --------------------------------- //
+[[annexe-language-computation]]
+= Spécificités du langage
+// --------------------------------- //
+// --------------------------------- //
+
+// tag::anx-lgn-compute-prg-generic-meca-analyze[]
+GET _analyze
+{
+   "text": ["The John's GUITARES do Not worKING well"],
+   "analyzer": "english"
+}
+// end::anx-lgn-compute-prg-generic-meca-analyze[]
+
+// --------   FIN CHAPITRE  -------- //
+// --------------------------------- //
+// --------------------------------- //
+
+
+// --------------------------------- //
+// --------------------------------- //
+[[annexe-i18n]]
+= ???
+// --------------------------------- //
+// --------------------------------- //
+
+
+// --------   FIN CHAPITRE  -------- //
+// --------------------------------- //
+// --------------------------------- //
+
+
+// --------------------------------- //
+// --------------------------------- //
+[[annexe-i18n]]
+= i18n
+// --------------------------------- //
+// --------------------------------- //
+
+
+
+== Typologie des documents
+Trois cas d'utilisations possibles :
+
+
+== Détection du langage
+
+== Stratégies
+
+
+=== Un index par langue
+
+==== Indexation
+
+===== Création index
+
+
+// tag::anx-i18n-one-idx-per-lgn-create-index-en[]
+PUT tp_elastic_i18n_doc_en
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "fields": {
+          "lang": {
+            "type": "text",
+            "analyzer": "english"
+          }
+        }
+      }
+    }
+  }
+}
+// end::anx-i18n-one-idx-per-lgn-create-index-en[]
+
+// tag::anx-i18n-one-idx-per-lgn-create-index-fr[]
+PUT tp_elastic_i18n_doc_fr
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "fields": {
+          "lang": {
+            "type": "text",
+            "analyzer": "french"
+          }
+        }
+      }
+    }
+  }
+}
+// end::anx-i18n-one-idx-per-lgn-create-index-fr[]
+
+
+// tag::anx-i18n-one-idx-per-lgn-create-index-es[]
+PUT tp_elastic_i18n_doc_es
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "fields": {
+          "lang": {
+            "type": "text",
+            "analyzer": "spanish"
+          }
+        }
+      }
+    }
+  }
+}
+// end::anx-i18n-one-idx-per-lgn-create-index-es[]
+
+=====  Ajout des données
+
+// tag::anx-i18n-one-idx-per-lgn-index-data-en[]
+POST tp_elastic_i18n_doc_en/_bulk
+{ "index": { "_id": 1 }}
+{"title" : "Gone With The Wind"}
+{ "index": { "_id": 2 }}
+{"title" : " What Have I Done to Deserve This?"}
+{ "index": { "_id": 3 }}
+{"title" : "All About My Mother"}
+{ "index": { "_id": 4 }}
+{"title" : "High Heels"}
+{ "index": { "_id": 5 }}
+{"title" : "Law of Desire"}
+{ "index": { "_id": 6 }}
+{"title" : "The Wind That Shakes The Barley"}
+// end::anx-i18n-one-idx-per-lgn-index-data-en[]
+
+
+
+// tag::anx-i18n-one-idx-per-lgn-index-data-fr[]
+POST tp_elastic_i18n_doc_fr/_bulk
+{ "index": { "_id": 1 }}
+{"title" : "Autant en emporte le vent"}
+{ "index": { "_id": 2 }}
+{"title" : "Qu'est-ce que j'ai fait pour mériter ça ?"}
+{ "index": { "_id": 3 }}
+{"title" : "Tout sur ma mère"}
+{ "index": { "_id": 4 }}
+{"title" : "Talons aiguilles"}
+{ "index": { "_id": 5 }}
+{"title" : "La Loi du désir"}
+{ "index": { "_id": 6 }}
+{"title" : "Le vent se lève"}
+// end::anx-i18n-one-idx-per-lgn-index-data-fr[]
+
+
+// tag::anx-i18n-one-idx-per-lgn-index-data-es[]
+POST tp_elastic_i18n_doc_es/_bulk
+{ "index": { "_id": 1 }}
+{ "title" : "Lo que el viento se llevo"}
+{ "index": { "_id": 2 }}
+{"title" : "¿Qué he hecho yo para merecer esto?"}
+{ "index": { "_id": 3 }}
+{"title" : "Todo sobre me madre"}
+{ "index": { "_id": 4 }}
+{"title" : "Mujeres al borde de un attaque de nervios"}
+{ "index": { "_id": 5 }}
+{"title" : "La ley del deseo"}
+{ "index": { "_id": 6 }}
+{"title" : "El viento que agita la cebada"}
+// end::anx-i18n-one-idx-per-lgn-index-data-es[]
+
+
+
+
+
+==== Rercherches
+
+// tag::anx-i18n-one-idx-per-lgn-query-1[]
+GET /tp_elastic_i18n_doc_*/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "wind",
+      "fields": [ "title", "title.lang" ],
+      "type": "most_fields"
+    }
+  },
+  "indices_boost": [
+    {"tp_elastic_i18n_doc_en": 3},
+    {"tp_elastic_i18n_doc_fr": 2}
+  ]
+}
+// end::anx-i18n-one-idx-per-lgn-query-1[]
+
+<<<
+
+
+=== Un champ par langue
+
+
+==== Indexation
+
+===== Création index
+
+// tag::anx-i18n-one-idx-for-all-fields-create-index[]
+PUT tp_elastic_i18n_field
+{
+  "mappings": {
+    "properties": {
+      "titre_en": {
+        "type": "text",
+        "analyzer": "english"
+      },
+      "titre_fr": {
+        "type": "text",
+        "analyzer": "french"
+      },
+      "titre_es": {
+        "type": "text",
+        "analyzer": "spanish"
+      }
+    }
+  }
+}
+// end::anx-i18n-one-idx-for-all-fields-create-index[]
+
+
+===== Ajout des données
+
+// tag::anx-i18n-one-idx-for-all-fields-index-data[]
+POST tp_elastic_i18n_field/_bulk
+{ "index": { "_id": 1 }}
+{"title_en" : "Gone With The Wind", "title_fr" : "Autant en emporte le vent", "title_es" : "Lo que el viento se llevo"}
+{ "index": { "_id": 2 }}
+{"title_en" : "", "title_fr" : "xx", "title_es" : "xx"}
+{ "index": { "_id": 3 }}
+{"title_en" : "All About My Mother", "title_fr" : "Tout sur ma mère", "title_es" : "Todo sobre me madre"}
+{ "index": { "_id": 4 }}
+{"title_en" : "High Heels", "title_fr" : "Talons aiguilles", "title_es" : "Mujeres al borde de un attaque de nervios"}
+{ "index": { "_id": 5 }}
+{"title_en" : "Law of Desire", "title_fr" : "La Loi du désir", "title_es" : "La ley del deseo"}
+{ "index": { "_id": 6 }}
+{"title_en" : "The Wind That Shakes The Barley", "title_fr" : "Le vent se lève", "title_es" : "El viento que agita la cebada"}
+// end::anx-i18n-one-idx-for-all-fields-index-data[]
+
+
+==== Recherches
+
+===== Intérrogation d'une langue donnée
+
+
+// tag::anx-i18n-one-idx-for-all-fields-query-1[]
+GET /tp_elastic_i18n_field/_search
+{
+  "query": {
+    "match": {
+      "title_en": "wind"
+    }
+  }
+}
+// end::anx-i18n-one-idx-for-all-fields-query-1[]
+
+===== Intérrogation de plusieurs langues
+
+
+// tag::anx-i18n-one-idx-for-all-fields-query-2[]
+GET /tp_elastic_i18n_field/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "wind",
+      "fields": [
+        "title*",
+        "title_en^3"
+      ],
+      "type": "most_fields"
+    }
+  }
+}
+// end::anx-i18n-one-idx-for-all-fields-query-2[]
+
+
+
+
+=== Mélange de langues
+
+
+==== Indexation
+
+===== Création index
+
+// tag::anx-i18n-mixed-lgn-create-index[]
+PUT tp_elastic_i18n_blend
+{
+  "settings":
+  {
+    "analysis":
+    {
+      "filter":
+      {
+        "trigram-filter" :
+        {
+          "type" : "ngram",
+          "min_gram" : 3,
+          "max_gram" : 3
+        }
+      },
+      "analyzer":
+      {
+        "trigrams" :
+        {
+          "type" : "custom",
+          "tokenizer" : "standard",
+          "filter" : ["lowercase","trigram-filter"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "fields":
+        {
+
+            "en": {
+              "type": "text",
+              "analyzer": "english"
+            },
+            "fr": {
+              "type": "text",
+              "analyzer": "french"
+            },
+            "es": {
+              "type": "text",
+              "analyzer": "french"
+            } ,
+            "trigrams": {
+              "type": "text",
+              "analyzer": "trigrams"
+            }
+
+        }
+      }
+    }
+  }
+}
+// end::anx-i18n-mixed-lgn-create-index[]
+
+
+===== Ajout des données
+
+// tag::anx-i18n-mixed-lgn-index-data[]
+POST tp_elastic_i18n_blend/_bulk
+{ "index": { "_id": 1 }}
+{"title" : "Gone With The Wind ; Autant en emporte le vent ; Lo que el viento se llevo"}
+{ "index": { "_id": 2 }}
+{"title" : "The wind is rising ; Le vent se lève ; El viento está subiendo"}
+// end::anx-i18n-mixed-lgn-index-data[]
+
+
+==== Recherches
+
+// tag::anx-i18n-mixed-lgn-query[]
+GET /tp_elastic_i18n_blend/_search
+{
+  "query":
+  {
+    "multi_match": {
+      "query": "wind",
+      "fields": ["title","title.*","title.en^4"],
+      "type": "most_fields"
+    }
+  }
+}
+// end::anx-i18n-mixed-lgn-query[]
+
+// --------   FIN CHAPITRE  -------- //
+// --------------------------------- //
+// --------------------------------- //
