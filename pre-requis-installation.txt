@@ -1,0 +1,38 @@
+
+// --------------------------------- //
+// --------------------------------- //
+[[chapter-pre-requisites]]
+= Pré-requis
+// --------------------------------- //
+// --------------------------------- //
+
+
+== IDE
+
+
+
+// tag::prerequis-query-example-body[]
+{
+  "query":
+  {
+    "match": {
+      "app_name": "draw"
+    }
+  }
+}
+// end::prerequis-query-example-body[]
+
+
+// tag::prerequis-query-example-devtools[]
+GET tp_elastic_mq/_search
+// end::prerequis-query-example-devtools[]
+
+// tag::prerequis-query-example-curl[]
+curl -XGET "http://<host>:<port>/tp_elastic_mq/_search" -H 'Content-Type: application/json' -d
+// end::prerequis-query-example-curl[]
+
+
+
+// --------   FIN CHAPITRE  -------- //
+// --------------------------------- //
+// --------------------------------- //

@@ -1,0 +1,7 @@
+
+
+// tag::installation-warning-logstash-jdk-version[]
+WARNING: Contrairement à Elasticsearch, Logstash n'est pas bundlé avec un JDK. La matrice de {url-es-doc-matrix}[compatibilité Logstash / JVM] préconise l'utilisation d'un JDK 1.8.0 ou 11 pour la version {es-version-bugfix}.
+Néanmoins, la partie Logstash des exercices de ce fascicule a été réalisée avec la version du JDK bundlé avec Elasticsearch sans problème.
+// end::installation-warning-logstash-jdk-version[]
+
