@@ -155,8 +155,8 @@ GET /tp_elastic_13
     "settings" : {
       "index" : {
         "creation_date" : "1552152736309",
-        "number_of_shards" : "1",
-        "number_of_replicas" : "0",
+        "number_of_shards" : "1", // <1>
+        "number_of_replicas" : "0", // <2>
         "uuid" : "0y7MR1CVQnOs3NgQiZFGUA",
         "version" : {
           "created" : "6060099"
@@ -166,7 +166,11 @@ GET /tp_elastic_13
     }
   }
 }
+
+<1> : 1 shard
+<2> : 0 replica
 // end::ddl-13-DisplayIndexCaracteristicsOutput[]
+
 
 
 ### 1.4 Création Index avec mapping personnalisé
@@ -204,10 +208,10 @@ GET /tp_elastic_14
     "mappings" : {
       "_doc" : {
         "properties" : {
-          "app_name" : {
+          "app_name" : { //<1>
             "type" : "text"
           },
-          "category" : {
+          "category" : { //<2>
             "type" : "keyword"
           },
           "last_updated" : {
@@ -222,8 +226,8 @@ GET /tp_elastic_14
     "settings" : {
       "index" : {
         "creation_date" : "1552152453624",
-        "number_of_shards" : "1",
-        "number_of_replicas" : "0",
+        "number_of_shards" : "1", //<3>
+        "number_of_replicas" : "0", //<4>
         "uuid" : "9tX0PEOjQpGXXGEbjPSroQ",
         "version" : {
           "created" : "6060099"
@@ -233,6 +237,11 @@ GET /tp_elastic_14
     }
   }
 }
+
+<1> : champ app_name de type text uniquement comme indiqué dans le mapping
+<2> : champ category de type keyword uniquement comme indiqué dans le mapping
+<3> : 1 shard comme indiqué dans les settings
+<4> : 0 replica comme indiqué dans les settings
 // end::ddl-14-DisplayIndexCaracteristicsOutput[]
 
 
