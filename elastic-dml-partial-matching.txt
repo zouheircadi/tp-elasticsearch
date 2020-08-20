@@ -36,7 +36,7 @@ Indexer-y les données disponibles https://tinyurl.com/y8h36zvt[en ligne ici] en
 //dml-partial-matching-test-case-data.txt
 // tag::dml-partial-matching-tc-pm1-post-data[]
 POST /tp_elastic_pm1/_bulk
-// ... data à indexer : https://tinyurl.com/y8h36zvt
+// ... data à indexer au format NDJSON
 // end::dml-partial-matching-tc-pm1-post-data[]
 
 
@@ -235,7 +235,7 @@ PUT /tp_elastic_pm2
 
 // tag::dml-partial-matching-tc-pm2-post-data[]
 POST /tp_elastic_pm2/_bulk
-// ... data à indexer : https://tinyurl.com/y8h36zvt
+// ... data à indexer au format NDJSON
 // end::dml-partial-matching-tc-pm2-post-data[]
 
 
@@ -349,7 +349,7 @@ PUT /tp_elastic_pm3
 
 // tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-load-data[]
 POST /tp_elastic_pm3/_bulk
-// ... data à indexer : https://tinyurl.com/y8h36zvt
+// ... data à indexer au format NDJSON
 // end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-load-data[]
 
 - Tester le nouvel index en cherchant le token “rep”

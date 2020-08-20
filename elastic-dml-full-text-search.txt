@@ -65,10 +65,14 @@ GET /tp_elastic_mq/_explain/3
 
 Décomposition du score du premier document remonté qui a le score le plus élevé (la sortie JSON détaillée est également indiquée ci-dessous)
 // tag::dml-fts-match-query-explain-score-breakdown[]
-* 0.15461528 =
-* 0,13353139 => idf log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5))
-* (*)
-*  1,1578947 => tf (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength))
+0.15461528 =
+    0,13353139 => idf log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5)) //<1>
+    (*) // <3>
+    1,1578947 => tf (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength)) //<2>
+
+<1> : inverse document frequency avec sa formule de calcul
+<2> : term frequency avec sa formule de calcul
+<3> : le résultat final du score est le produit de l'idf et de la tf
 // end::dml-fts-match-query-explain-score-breakdown[]
 
 
@@ -197,10 +201,10 @@ GET tp_elastic_mq/_search?explain=true
 Décomposition du score du premier document remonté qui a le score le plus élevé
 
 // tag::dml-fts-match-query-OR-explain-score-break-down[]
-* 0.9806374 =
-** score de draw : 0.11750762 => (0,13353139 * 0,88)
-* (+)
-* score de art : 0.86312973 => (0,98082924 * 0,88)
+0.9806374 =
+    score de draw : 0.11750762 => (0,13353139 * 0,88)
+    (+)
+    score de art : 0.86312973 => (0,98082924 * 0,88)
 // end::dml-fts-match-query-OR-explain-score-break-down[]
 
 
@@ -372,7 +376,7 @@ GET  tp_elastic_mf1/_search
     }
   }
 }
-// tag::dml-fts-mfq-one-query-per-field-query[]
+// end::dml-fts-mfq-one-query-per-field-query[]
 
 
 
@@ -454,6 +458,22 @@ GET /tp_elastic_mf2/_search
 |     1     |  0.7268042  |
 // end::dml-fts-mfq-one-text-for-all-fields-test-case-2-score[]
 
+////
+|===
+| Document ID
+| Score
+
+a|
+2
+a|
+0.9223515
+
+a|
+1
+a|
+0.7268042
+|===
+////
 
 
 Les tokens draw et art sont présents :
@@ -483,6 +503,15 @@ GET /tp_elastic_mf2/_search
  }
 }
 // end::dml-fts-mfq-one-text-for-all-fields-test-case-2-query-dismax[]
+
+// tag::dml-fts-mfq-one-text-for-all-fields-test-case-2-query-dismax-score-table[]
+|Document ID|     Score   |
+|:---------:|:-----------:|
+|     1     |  0.7268042  |
+|     2     |  0.6931472  |
+// end::dml-fts-mfq-one-text-for-all-fields-test-case-2-query-dismax-score-table[]
+
+
 
 
 ##### Recherches de type Dismax  - effet de bord
@@ -599,17 +628,42 @@ GET /tp_elastic_mf3/_explain/2
 Le score se décompose comme suit :
 
 // tag::dml-fts-mfq-one-text-for-all-fields-test-case-3-query-dismax-tie-breaker-explain-doc-2-score-break-down[]
-* 0.88960975 =
-** 0,6931472 => le tie_breaker ne s'applique pas au champ dont le score est le plus élevé
-* (+)
-** (tie_breaker * 0,6548752)  => prise en compte du champ de score plus bas multiplié par le tie_breaker
-
-Modulations possibles de l'effet tie_breaker :
-
-* tie_breaker = 0 : le score du document remonté sera celui du champ dont le score est le plus élevé
-* tie_breaker = 1 : Suppression de l'effet Dismax
-* tie_breaker usuel 0.3 à 0.4
+0.88960975 =
+    0,6931472 => le tie_breaker ne s'applique pas au champ dont le score est le plus élevé
+    (+)
+    (tie_breaker * 0,6548752)  => prise en compte du champ de score plus bas multiplié par le tie_breaker
 // end::dml-fts-mfq-one-text-for-all-fields-test-case-3-query-dismax-tie-breaker-explain-doc-2-score-break-down[]
+
+// tag::dml-fts-mfq-one-text-for-all-fields-test-case-3-query-dismax-tie-breaker-explain-doc-2-score-break-down-v2[]
+{
+  "_index" : "tp_elastic_mf3",
+  "_type" : "_doc",
+  "_id" : "2",
+  "matched" : true,
+  "explanation" : {
+    "value" : 0.88960975,
+    "description" : "max plus 0.3 times others of:", //<1>
+    "details" : [
+      {
+        "value" : 0.6931472, //<2>
+        "description" : "sum of:",
+        "details" : [...]
+      },
+      {
+        "value" : 0.6548752, //<3>
+        "description" : "sum of:",
+        "details" : [...]
+      }
+    ]
+  }
+}
+
+<1> : Explication du mode de calcul du score. Il y est fait mention de la valeur du tie-breaker : 0.3
+<2> : le tie_breaker ne s'applique pas au champ dont le score est le plus élevé
+<3> : champ ayant un score moins élevé que le score max
+
+Score final : 0.88960975 = 0,6931472 + (tie_breaker * 0,6548752)  => prise en compte du champ de score plus bas multiplié par le tie_breaker
+// end::dml-fts-mfq-one-text-for-all-fields-test-case-3-query-dismax-tie-breaker-explain-doc-2-score-break-down-v2[]
 
 
 ##### Queries de type Multimatch

@@ -41,20 +41,26 @@ Le terme photos est analysé en photos. Il est donc normal de ne pas le trouver
 // tag::dml-lang-spec-query-app-name-analyze-with-language-analyzer[]
 GET tp_elastic_filter/_analyze
 {
-  "text": ["photos"],
-  "analyzer": "english"
+  "text": ["photos"], //<1>
+  "analyzer": "english" //<2>
 }
+<1> : texte à analyser
+<2> : analyzer présent sur étagère et qui serait un candidat potentiel à l'indexation souhaitée
 // end::dml-lang-spec-query-app-name-analyze-with-language-analyzer[]
 
-Ou plus simplement la requête ci-dessous. Le endpoint _analyze peut être invoqué directement et n'exige pas la présence d'un index
+
 
 
 // tag::dml-lang-spec-query-app-name-analyze-with-language-analyzer-simpler[]
-GET _analyze
+GET _analyze //<3>
 {
-  "text": ["photos"],
-  "analyzer": "english"
+  "text": ["photos"], //<1>
+  "analyzer": "english" //<2>
 }
+
+<1> : texte à analyser
+<2> : analyzer présent sur étagère
+<3> : endpoint _analyze invoqué directement car l'analyzer est présent sur étagère. Pour les analyzers personnalisés, la présence dans l'URL du nom de l'index où ils sont définis est obligatoire.
 // end::dml-lang-spec-query-app-name-analyze-with-language-analyzer-simpler[]
 
 

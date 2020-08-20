@@ -80,6 +80,7 @@ GET /tp_elastic_11/_search
 * On utilise ensuite le endPoint _analyze pour voir comment est indexé le champ
 
 
+L'API analyse nous indique que le champ n'est pas indexé tel quel. Il est tokenisé sur le tiret. Il n'est donc pas possible de le trouver
 // tag::dml-211-analyzeCategoryField[]
 GET /tp_elastic_11/_analyze
 {
@@ -88,7 +89,35 @@ GET /tp_elastic_11/_analyze
 }
 // end::dml-211-analyzeCategoryField[]
 
-L'API analyse nous indique que le champ n'est pas indexé tel quel. Il est tokenisé sur le tiret. Il n'est donc pas possible de le trouver
+// tag::dml-211-analyzeCategoryField-response[]
+{
+  "tokens" : [
+    {
+      "token" : "art",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "and",
+      "start_offset" : 4,
+      "end_offset" : 7,
+      "type" : "<ALPHANUM>",
+      "position" : 1
+    },
+    {
+      "token" : "design",
+      "start_offset" : 8,
+      "end_offset" : 14,
+      "type" : "<ALPHANUM>",
+      "position" : 2
+    }
+  ]
+}
+// end::dml-211-analyzeCategoryField-response[]
+
+
 
 Si on effectue le même test sur le champ category.keyword, on constate que le contenu du champ est indexé tel quel
 
@@ -100,32 +129,40 @@ GET /tp_elastic_11/_analyze
 }
 // end::dml-211-analyzeCategoryKeywordField[]
 
+// tag::dml-211-analyzeCategoryKeywordField-response[]
+{
+  "tokens" : [
+    {
+      "token" : "ART-AND-DESIGN",
+      "start_offset" : 0,
+      "end_offset" : 14,
+      "type" : "word",
+      "position" : 0
+    }
+  ]
+}
+// end::dml-211-analyzeCategoryKeywordField-response[]
+
 
 ###### Quelle(s) solution(s) peut-on envisager pour remédier à cette situation ?
-
-* index tp_elastic_11
-    * Lorsqu'on utilise le "mapping automatique", tout champ de type texte est indexé de deux manières
-        * Indexation de type text => Le champ est analysé
-        * Indexation de type keyword => Le champ n'est pas analysé. Il est indexé sans aucune modification.
-    * Pour l'index tp_elastic_11, on peut donc interroger le champ category.keyword
-
-
 
 
 
 // tag::dml-211-tpElastic11FilterQueryArtAndDesign[]
 GET /tp_elastic_11/_search
 {
-    "query" : {
-        "constant_score" : {
-          "filter":
-          {
-            "term": {
-              "category.keyword" :"ART-AND-DESIGN"
-            }
-          }
+  "query":
+  {
+    "bool":
+    {
+      "filter":
+      {
+        "term": {
+          "category.keyword": "ART-AND-DESIGN"
         }
+      }
     }
+  }
 }
 // end::dml-211-tpElastic11FilterQueryArtAndDesign[]
 
@@ -161,7 +198,7 @@ GET /tp_elastic_14/_search
 ###### Données à charger avec les devTools Kibana
 // tag::dml-filters-212-testCase[]
 POST tp_elastic_filter/_doc/_bulk
-// ... bloc data à indexer : https://tinyurl.com/y9dbdlzr
+// ... bloc data à indexer disponible en ligne : https://tinyurl.com/y9dbdlzr
 // end::dml-filters-212-testCase[]
 
 
@@ -191,7 +228,7 @@ Plusieurs réponses possibles
     * un match_all
     * et un filtre
 
-Le match_all peut être remplacé par une ou des requêtes full text (match, multi_match, ...). Si tel était le cas, le contexte aurait été de type full text avec un calcul de score.
+Le match_all pourra ainsi être remplacé par une ou des requêtes full text (match, multi_match, ...). Si tel était le cas, nous aurions eu un _query context_ avec un calcul de score.
 
 
 // tag::dml-filters-212-filterQueryMatchAll[]
