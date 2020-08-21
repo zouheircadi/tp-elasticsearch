@@ -156,7 +156,7 @@ PUT tp_elastic_lang1/_mapping/
 
 // tag::dml-lang-spec-query-app-name-index-lang1-add-data[]
 POST /tp_elastic_lang1/_bulk
-// ... data to post from // TODO ajouter le lien quand possible - dml-lang-spec-test-case-data.txt
+// ... data à indexer au format NDJSON
 // end::dml-lang-spec-query-app-name-index-lang1-add-data[]
 
 

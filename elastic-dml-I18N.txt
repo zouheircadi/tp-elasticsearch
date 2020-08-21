@@ -1,25 +1,59 @@
 
-// tag::dml-I18N-per-field-data-load-link[]
-//https://www.dropbox.com/s/vrpncxwxwtg4kxh/dml-I18N-test-case-data.txt?dl=0
-* https://tinyurl.com/yd6s956d[Indexez le jeu de données] (https://tinyurl.com/yd6s956d)
-// end::dml-I18N-per-field-data-load-link[]
+
+// tag::dml-I18N-per-field-create-index[]
+PUT /tp_elastic_i18n_per_field/_bulk
+{
+  "mappings": {
+    "properties": {
+      "app_name_en": {
+        "type": "text",
+        "analyzer": "english",
+        "fields":
+        {
+          "std" :
+          {
+            "type" : "text"
+          }
+        }
+      },
+      "app_name_fr": {
+        "type": "text",
+        "analyzer": "french",
+        "fields":
+        {
+          "std" :
+          {
+            "type" : "text"
+          }
+        }
+      },
+      "app_name_es": {
+        "type": "text",
+        "analyzer": "spanish",
+        "fields":
+        {
+          "std" :
+          {
+            "type" : "text"
+          }
+        }
+      }
+    }
+  }
+}
+// end::dml-I18N-per-field-create-index[]
 
 
 // tag::dml-I18N-per-field-add-data[]
-POST /tp_elastic_i18n_262/_bulk
-{ "index": { "_id": 1 }}
-{"app_name_en" : "Photo Editor & ScrapBook", "app_name_fr" : "Editeur de photo & album photo", "app_name_es" : "Editor de fotos & álbum de fotos", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN","price" : 0.0, "last_updated" : "2018-01-06T23:00:00.000Z", "content_rating" : "Everyone","rating" : 4.1}
-{ "index": { "_id": 2 }}
-{ "app_name_en" : "QR Code Reader", "app_name_fr" : "Lecteur de QR code", "app_name_es" : "Lector de código QR", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2016-03-15T23:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.0}
-{ "index": { "_id": 4 }}
-{ "app_name_en" : "SHAREit - Transfer & Share", "app_name_fr" : "SHAREit - Transférer et partager", "app_name_es" : "SHAREit - Transfiere y comparte", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2018-07-29T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+POST /tp_elastic_i18n_per_field/_bulk
+// ... data à indexer au format NDJSON
 // end::dml-I18N-per-field-add-data[]
 
 
 
 # i18n - search 1
 // tag::dml-I18N-per-field-query-one[]
-GET /tp_elastic_i18n_262/_search
+GET /tp_elastic_i18n_per_field/_search
 {
   "query": {
     "multi_match": {
@@ -35,7 +69,7 @@ GET /tp_elastic_i18n_262/_search
 
 # i18n - search 2
 // tag::dml-I18N-per-field-query-two[]
-GET /tp_elastic_i18n_262/_search
+GET /tp_elastic_i18n_per_field/_search
 {
   "query": {
     "multi_match": {
@@ -52,7 +86,7 @@ GET /tp_elastic_i18n_262/_search
 
 # i18n - search 3
 // tag::dml-I18N-per-field-query-three[]
-GET /tp_elastic_i18n_262/_search
+GET /tp_elastic_i18n_per_field/_search
 {
   "query": {
     "multi_match": {
@@ -69,11 +103,11 @@ GET /tp_elastic_i18n_262/_search
 
 
 // tag::dml-I18N-per-index-create-index-en[]
-PUT tp_elastic_i18n_doc_en
+PUT tp_elastic_i18n_per_idx_en
 {
   "mappings": {
     "properties": {
-      "title": {
+      "app_name": {
         "type": "text",
         "fields": {
           "lang": {
@@ -88,11 +122,11 @@ PUT tp_elastic_i18n_doc_en
 // end::dml-I18N-per-index-create-index-en[]
 
 // tag::dml-I18N-per-index-create-index-fr[]
-PUT tp_elastic_i18n_doc_fr
+PUT tp_elastic_i18n_per_idx_fr
 {
   "mappings": {
     "properties": {
-      "title": {
+      "app_name": {
         "type": "text",
         "fields": {
           "lang": {
@@ -106,20 +140,39 @@ PUT tp_elastic_i18n_doc_fr
 }
 // end::dml-I18N-per-index-create-index-fr[]
 
+// tag::dml-I18N-per-index-create-index-es[]
+PUT tp_elastic_i18n_per_idx_es
+{
+  "mappings": {
+    "properties": {
+      "app_name": {
+        "type": "text",
+        "fields": {
+          "lang": {
+            "type": "text",
+            "analyzer": "spanish"
+          }
+        }
+      }
+    }
+  }
+}
+// end::dml-I18N-per-index-create-index-es[]
+
 
 // tag::dml-I18N-per-index-query-most-field-with-boost[]
-GET /tp_elastic_i18n_doc_*/_search
+GET /tp_elastic_i18n_per_idx_*/_search
 {
   "query": {
     "multi_match": {
-      "query": "wind",
-      "fields": [ "title", "title.lang" ],
+      "query": "photo scrapbook",
+      "fields": [ "app_name", "app_name.lang" ],
       "type": "most_fields"
     }
   },
   "indices_boost": [
-    {"tp_elastic_i18n_doc_en": 3},
-    {"tp_elastic_i18n_doc_fr": 2}
+    {"tp_elastic_i18n_per_idx_en": 3},
+    {"tp_elastic_i18n_per_idx_fr": 2}
   ]
 }
 // end::dml-I18N-per-index-query-most-field-with-boost[]
