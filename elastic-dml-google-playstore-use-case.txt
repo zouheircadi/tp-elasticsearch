@@ -294,7 +294,8 @@ PUT tp_elastic_gstore_v2
 POST /_aliases
 {
     "actions" : [
-        { "add" : { "index" : "tp_elastic_gstore_v2", "alias" : "tp_elastic_gstore" } }
+        { "remove": { "index" : "tp_elastic_gstore_v1", "alias" : "tp_elastic_gstore" } },
+        { "add"   : { "index" : "tp_elastic_gstore_v2", "alias" : "tp_elastic_gstore" } }
     ]
 }
 // end::dml-playstore-use-case-index-alias-v2[]
@@ -308,11 +309,6 @@ GET /tp_elastic_gstore/_analyze
   "field": "app_name.english"
 }
 // end::dml-playstore-use-case-index-v2-analysis[]
-
-
-// tag::dml-playstore-use-case-data-load-instruction[]
-- Charger les données
-// end::dml-playstore-use-case-data-load-instruction[]
 
 
 
@@ -515,7 +511,7 @@ POST /_aliases
 {
     "actions" : [
         { "remove": { "index" : "tp_elastic_gstore_v2", "alias" : "tp_elastic_gstore" } },
-        { "add" : { "index" : "tp_elastic_gstore_v3", "alias" : "tp_elastic_gstore" } }
+        { "add"   : { "index" : "tp_elastic_gstore_v3", "alias" : "tp_elastic_gstore" } }
     ]
 }
 // end::dml-playstore-use-case-index-alias-v3[]
@@ -687,7 +683,7 @@ POST /_aliases
 {
     "actions" : [
         { "remove": { "index" : "tp_elastic_gstore_v3", "alias" : "tp_elastic_gstore" } },
-        { "add" : { "index" : "tp_elastic_gstore_v4", "alias" : "tp_elastic_gstore" } }
+        { "add"   : { "index" : "tp_elastic_gstore_v4", "alias" : "tp_elastic_gstore" } }
     ]
 }
 // end::dml-playstore-use-case-index-alias-v4[]
@@ -853,7 +849,7 @@ POST /_aliases
 {
     "actions" : [
         { "remove": { "index" : "tp_elastic_gstore_v4", "alias" : "tp_elastic_gstore" } },
-        { "add" : { "index" : "tp_elastic_gstore_v5", "alias" : "tp_elastic_gstore" } }
+        { "add"   : { "index" : "tp_elastic_gstore_v5", "alias" : "tp_elastic_gstore" } }
     ]
 }
 // end::dml-playstore-use-case-index-alias-v5[]

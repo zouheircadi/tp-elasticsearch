@@ -6,11 +6,7 @@
 [[chapter-correction-relevance-control-user-ranking]]
 == Contrôle du score par un ranking utilisateur (like, rating, …)
 
-=== Chargement du fichier de travail
 
-// tag::relevance-control-user-ranking-test-case-loading-instruction[]
-Voir paragraphe précédent <<correction-dml-google-playstore-use-case-queries-tp-elastic-gstore-v5,Autocompletion>>
-// end::relevance-control-user-ranking-test-case-loading-instruction[]
 
 === Contrôle du score par un ranking utilisateur (like, rating, …)
 
@@ -74,23 +70,12 @@ L'élément qui remontait en premier remonte maintenant en 10eme position car il
 [[chapter-correction-relevance-control-price]]
 == Contrôle du score par un prix
 
-=== Chargement des données
 
-// tag::relevance-control-price-test-case-data-instructions[]
-
-La requête pour le chargement vous est fourni.
-
-// https://www.dropbox.com/s/4io0wqx3f3jyc0r/relevance-control-price-test-case-data.txt?dl=0
-// https://tinyurl.com/y2wc9ldn : relevance-control-price-test-case-data
-Récupérer la query https://tinyurl.com/y2wc9ldn[en ligne] : https://tinyurl.com/y2wc9ldn
-
-Executer-là pour charger le jeu d'essai
-// end::relevance-control-price-test-case-data-instructions[]
 
 
 
 // tag::relevance-control-price-test-case-data[]
-POST  tp_elastic_formations/_bulk
+POST  /tp_elastic_formations/_bulk
 { "index": { "_id":1}}
 {"course" : "Elasticsearch Engineer I", "start_date" : "2019-09-16", "end_date" : "2019-09-17", "city" : "Zurich", "country" : "Switzerland","location" : {"lat":"47.3769","lon":"8.5417"},"price" : 2000}
 { "index": { "_id":3}}
@@ -126,7 +111,7 @@ La fonction adéquate est une decay function. L'astuce est de prendre
 - sans sort
 
 // tag::relevance-control-price-query-one-without-sort[]
-GET tp_elastic_fct_decay/_search
+GET tp_elastic_formations/_search
 {
   "size": 20,
   "query":
@@ -161,7 +146,7 @@ GET tp_elastic_fct_decay/_search
 - avec sort sur le score puis sur le prix
 
 // tag::relevance-control-price-query-two-with-sort[]
-GET tp_elastic_fct_decay/_search
+GET tp_elastic_formations/_search
 {
   "size": 20,
   "sort": [
