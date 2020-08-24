@@ -57,11 +57,6 @@ PUT /lg_index
 // end::elastic-ops-recovery-create-recovery-index[]
 
 
-##### Première indexation des données
-// tag::elastic-ops-recovery-add-data[]
-./bin/logstash   -f <$PATH_TO>/ls-google-playstore-big.conf
-// end::elastic-ops-recovery-add-data[]
-
 ##### Vérifier le nombre de documents de l'index créé. Il doit y avoir 100 000 documents
 // tag::elastic-ops-recovery-count[]
 GET /lg_index/_count

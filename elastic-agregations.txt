@@ -11,7 +11,7 @@ a- Recherchez les applications ayant les tokens network social ou dating dans le
 a-1-1 - Avec une agrégation sur le champ category
 
 
-// tag::agregations-corpus-gps-corrections-agg-a-1-1[]
+// tag::agregations-corpus-gps-corrections-q1-a[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -30,11 +30,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-1-1[]
+// end::agregations-corpus-gps-corrections-q1-a[]
 
 a-1-2 - Trier la requête précédente sur la key
 
-// tag::agregations-corpus-gps-corrections-agg-a-1-2[]
+// tag::agregations-corpus-gps-corrections-q1-b[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -56,11 +56,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-1-2[]
+// end::agregations-corpus-gps-corrections-q1-b[]
 
 a-2.1 - Avec une agrégation sur le champ rating sur l’étendu des valeurs possibles avec un intervalle de 1
 
-// tag::agregations-corpus-gps-corrections-agg-a-2-1[]
+// tag::agregations-corpus-gps-corrections-q1-c[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -80,12 +80,12 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-2-1[]
+// end::agregations-corpus-gps-corrections-q1-c[]
 
 
 a-2.2  Trier la requête précédente sur le doc_count
 
-// tag::agregations-corpus-gps-corrections-agg-a-2-2[]
+// tag::agregations-corpus-gps-corrections-q1-d[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -108,7 +108,7 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-2-2[]
+// end::agregations-corpus-gps-corrections-q1-d[]
 
 
 a-3 Avec une aggregation sur le rating pour les intervalles ci-dessous
@@ -120,7 +120,7 @@ a-3 Avec une aggregation sur le rating pour les intervalles ci-dessous
 * a-3-1 - le tri se fait sur l'ordre alphanumérique des clés
 
 
-// tag::agregations-corpus-gps-corrections-agg-a-3-1[]
+// tag::agregations-corpus-gps-corrections-q1-e-1[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -143,12 +143,12 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-3-1[]
+// end::agregations-corpus-gps-corrections-q1-e-1[]
 
 a-3-2 Nommage des clés pour bénéficier du tri alphanumérique
 
 
-// tag::agregations-corpus-gps-corrections-agg-a-3-2[]
+// tag::agregations-corpus-gps-corrections-q1-e-2[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -171,11 +171,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-3-2[]
+// end::agregations-corpus-gps-corrections-q1-e-2[]
 
 a-4 Avec l’agrégation 1 (category : agrégation mère) à laquelle on imbrique l’agrégation 3 (agrégation fille)
 
-// tag::agregations-corpus-gps-corrections-agg-a-4-1[]
+// tag::agregations-corpus-gps-corrections-q1-f[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -206,7 +206,7 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-a-4-1[]
+// end::agregations-corpus-gps-corrections-q1-f[]
 
 b- Combien d’application ayant music dans le champ app_name ont un rating de 4.5 ou plus ?
 
@@ -214,7 +214,7 @@ Cet exercice a pour but de mettre en évidence une contrainte apparue dans Elast
 
 b-1 Avant la version 7, on pouvait le faire avec un filtre
 
-// tag::agregations-corpus-gps-corrections-agg-b-1[]
+// tag::agregations-corpus-gps-corrections-q2-a[]
 GET /tp_elastic_gstore/_search
 {
   "size": 10,
@@ -238,11 +238,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-b-1[]
+// end::agregations-corpus-gps-corrections-q2-a[]
 
 b-2 Si la version est supérieure à la 6, le moteur ne garantit plus la précision du nombre de hits (par défaut au delà de 10000). Il est possible de le faire avec une agrégation.  Voir documentation officielle sur [track total hits](https://www.elastic.co/guide/en/elasticsearch/reference/master/search-request-track-total-hits.html)
 
-// tag::agregations-corpus-gps-corrections-agg-b-2[]
+// tag::agregations-corpus-gps-corrections-q2-b[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -263,11 +263,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-b-2[]
+// end::agregations-corpus-gps-corrections-q2-b[]
 
 c- Quel est le nombre d’applications agrégées par tranche de 3 mois pour l’année 2017 ?
 
-// tag::agregations-corpus-gps-corrections-agg-c-1[]
+// tag::agregations-corpus-gps-corrections-q3[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -296,13 +296,13 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-c-1[]
+// end::agregations-corpus-gps-corrections-q3[]
 
 *Metrics*
 
 d- Trouver la plus petite et la plus grande valeur pour le champ last_updated ?
 
-// tag::agregations-corpus-gps-corrections-agg-metrics-d[]
+// tag::agregations-corpus-gps-corrections-q4[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -321,11 +321,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-metrics-d[]
+// end::agregations-corpus-gps-corrections-q4[]
 
 e-
 
-// tag::agregations-corpus-gps-corrections-agg-metrics-e[]
+// tag::agregations-corpus-gps-corrections-q5[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -363,13 +363,13 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-metrics-e[]
+// end::agregations-corpus-gps-corrections-q5[]
 
 
 f
 
 
-// tag::agregations-corpus-gps-corrections-agg-metrics-f[]
+// tag::agregations-corpus-gps-corrections-q6[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -398,11 +398,11 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-metrics-f[]
+// end::agregations-corpus-gps-corrections-q6[]
 
 g
 
-// tag::agregations-corpus-gps-corrections-agg-metrics-g[]
+// tag::agregations-corpus-gps-corrections-q7[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -431,7 +431,7 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-metrics-g[]
+// end::agregations-corpus-gps-corrections-q7[]
 
 
 *deep metrics*
@@ -439,7 +439,7 @@ GET /tp_elastic_gstore/_search
 h
 
 
-// tag::agregations-corpus-gps-corrections-agg-deep-metrics-h[]
+// tag::agregations-corpus-gps-corrections-q8[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -473,7 +473,7 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-deep-metrics-h[]
+// end::agregations-corpus-gps-corrections-q8[]
 
 *https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-pipeline-bucket-sort-aggregation.html[bucket_sort]*
 
@@ -485,7 +485,7 @@ i
 * et faites un bucket_sort sur les moyennes avec un size de 3
 
 
-// tag::agregations-corpus-gps-corrections-agg-bucket-sort-i[]
+// tag::agregations-corpus-gps-corrections-q9[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -526,7 +526,7 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-bucket-sort-i[]
+// end::agregations-corpus-gps-corrections-q9[]
 
 
 j
@@ -536,7 +536,7 @@ j
 * et faites un bucket_sort sur les moyennes avec un size de 5
 
 
-// tag::agregations-corpus-gps-corrections-agg-bucket-sort-j[]
+// tag::agregations-corpus-gps-corrections-q10[]
 GET /tp_elastic_gstore/_search
 {
   "size": 0,
@@ -577,4 +577,4 @@ GET /tp_elastic_gstore/_search
     }
   }
 }
-// end::agregations-corpus-gps-corrections-agg-bucket-sort-j[]
+// end::agregations-corpus-gps-corrections-q10[]

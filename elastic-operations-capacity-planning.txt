@@ -15,6 +15,7 @@ PUT /_template/template_capacity_planning
 
 ##### Load Data
 
+// TODO delete after tests
 // tag::elastic-ops-cp-load-data[]
 ./bin/logstash   -f ./<$PATH_TO>/ls-google-playstore.conf
 // end::elastic-ops-cp-load-data[]
