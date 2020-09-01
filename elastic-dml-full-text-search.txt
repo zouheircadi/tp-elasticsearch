@@ -356,7 +356,7 @@ POST /tp_elastic_mf1/_bulk
 // end::dml-fts-mfq-one-query-per-field-test-case[]
 
 
-* Trouver les documents qui contiennent
+* Trouvez les documents qui contiennent
     * draw dans le champ app_name
     * art dans le champ genres
 
@@ -399,7 +399,7 @@ GET /my_index/_search
 // end::dml-fts-mfq-one-text-for-all-fields-example[]
 
 #### Recherches de type booléen
-* Trouver les documents qui contiennent
+* Trouvez les documents qui contiennent
     * "draw art" dans le champ app_name
     * "draw art" dans le champ genres
 

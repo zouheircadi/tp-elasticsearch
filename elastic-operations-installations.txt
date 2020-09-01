@@ -89,7 +89,7 @@ cluster.initial_master_nodes: node-1,node-2,node-3
 === Démarrage premier noeud
 
 
-Essayer d'afficher l'état du cluster
+Essayez d'afficher l'état du cluster
 
 * Query
 
@@ -490,7 +490,7 @@ lg_index 0     p      STARTED   node-2
 Pour chaque serveur
 
 * Ouvrez le fichier $INSTALL_DIR/$ES_VERSION/cluster/production/node-<X>/config/elasticsearch.yml (<X> étant une variable à remplacer par le noeud modifié)
-* Ajouter les entrées ci-dessous dans les noeuds _master eligible_
+* Ajoutez les entrées ci-dessous dans les noeuds _master eligible_
 
 // tag::elastic-ops-installations-local-gateway-config-file[]
 gateway.recover_after_data_nodes: 3
@@ -628,7 +628,7 @@ lg_index 0     p      STARTED   node-2
 lg_index 0     r      STARTED   node-3
 // end::elastic-ops-installations-local-gateway-cat-shards-response-after-recover-after-time[]
 
-Démarrer le 4eme noeud
+Démarrez le 4eme noeud
 
 [source]
 [subs="verbatim,attributes"]
