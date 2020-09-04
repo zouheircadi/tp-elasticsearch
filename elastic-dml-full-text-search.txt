@@ -65,14 +65,16 @@ GET /tp_elastic_mq/_explain/3
 
 Décomposition du score du premier document remonté qui a le score le plus élevé (la sortie JSON détaillée est également indiquée ci-dessous)
 // tag::dml-fts-match-query-explain-score-breakdown[]
-0.15461528 =
-    0,13353139 => idf log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5)) //<1>
+0.1546153 =
+    2.2 => Boost
     (*) // <3>
-    1,1578947 => tf (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength)) //<2>
+    0.13353139 => idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) //<1>
+    (*) // <3>
+    0.5263158 => tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) //<2>
 
 <1> : inverse document frequency avec sa formule de calcul
 <2> : term frequency avec sa formule de calcul
-<3> : le résultat final du score est le produit de l'idf et de la tf
+<3> : le résultat final du score est le produit des résultats intermédiaires
 // end::dml-fts-match-query-explain-score-breakdown[]
 
 
@@ -80,87 +82,71 @@ Résultat de la requête avec un explain
 
 // tag::dml-fts-match-query-explain-one-tuple-result[]
 {
-  "took" : 26,
-  "timed_out" : false,
-  "_shards" : {
-    "total" : 1,
-    "successful" : 1,
-    "skipped" : 0,
-    "failed" : 0
-  },
-  "hits" : {
-    "total" : 3,
-    "max_score" : 0.15461528,
-    "hits" : [
+  "_index" : "tp_elastic_mq",
+  "_type" : "_doc",
+  "_id" : "3",
+  "matched" : true,
+  "explanation" : {
+    "value" : 0.1546153,
+    "description" : "weight(app_name:draw in 2) [PerFieldSimilarity], result of:",
+    "details" : [
       {
-        "_shard" : "[tp_elastic_mq][0]",
-        "_node" : "YgaDyGWxQ86eKKynrH5QdQ",
-        "_index" : "tp_elastic_mq",
-        "_type" : "_doc",
-        "_id" : "3",
-        "_score" : 0.15461528,
-        "_source" : {
-          "app_name" : "draw figure"
-        },
-        "_explanation" : {
-          "value" : 0.1546153,
-          "description" : "weight(app_name:draw in 2) [PerFieldSimilarity], result of:",
-          "details" : [
-            {
-              "value" : 0.1546153,
-              "description" : "score(doc=2,freq=1.0 = termFreq=1.0\n), product of:",
-              "details" : [
-                {
-                  "value" : 0.13353139,
-                  "description" : "idf, computed as log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5)) from:",
-                  "details" : [
-                    {
-                      "value" : 3.0,
-                      "description" : "docFreq",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 3.0,
-                      "description" : "docCount",
-                      "details" : [ ]
-                    }
-                  ]
-                },
-                {
-                  "value" : 1.1578947,
-                  "description" : "tfNorm, computed as (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength)) from:",
-                  "details" : [
-                    {
-                      "value" : 1.0,
-                      "description" : "termFreq=1.0",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 1.2,
-                      "description" : "parameter k1",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 0.75,
-                      "description" : "parameter b",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 3.0,
-                      "description" : "avgFieldLength",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 2.0,
-                      "description" : "fieldLength",
-                      "details" : [ ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+        "value" : 0.1546153,
+        "description" : "score(freq=1.0), product of:",
+        "details" : [
+          {
+            "value" : 2.2,
+            "description" : "boost",
+            "details" : [ ]
+          },
+          {
+            "value" : 0.13353139,
+            "description" : "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
+            "details" : [
+              {
+                "value" : 3,
+                "description" : "n, number of documents containing term",
+                "details" : [ ]
+              },
+              {
+                "value" : 3,
+                "description" : "N, total number of documents with field",
+                "details" : [ ]
+              }
+            ]
+          },
+          {
+            "value" : 0.5263158,
+            "description" : "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:",
+            "details" : [
+              {
+                "value" : 1.0,
+                "description" : "freq, occurrences of term within document",
+                "details" : [ ]
+              },
+              {
+                "value" : 1.2,
+                "description" : "k1, term saturation parameter",
+                "details" : [ ]
+              },
+              {
+                "value" : 0.75,
+                "description" : "b, length normalization parameter",
+                "details" : [ ]
+              },
+              {
+                "value" : 2.0,
+                "description" : "dl, length of field",
+                "details" : [ ]
+              },
+              {
+                "value" : 3.0,
+                "description" : "avgdl, average length of field",
+                "details" : [ ]
+              }
+            ]
+          }
+        ]
       }
     ]
   }
@@ -202,9 +188,9 @@ Décomposition du score du premier document remonté qui a le score le plus éle
 
 // tag::dml-fts-match-query-OR-explain-score-break-down[]
 0.9806374 =
-    score de draw : 0.11750762 => (0,13353139 * 0,88)
+    score de draw : 0.11750763 => (2,2 * 0,13353139 * 0,4)
     (+)
-    score de art : 0.86312973 => (0,98082924 * 0,88)
+    score de art : 0.86312973 => (2,2 * 0,98082924 * 0,4)
 // end::dml-fts-match-query-OR-explain-score-break-down[]
 
 
@@ -212,91 +198,146 @@ Résultat de la requête avec un explain (seul le premier document retourné est
 
 // tag::dml-fts-match-query-OR-explain-result[]
 {
-  "took" : 497,
-  "timed_out" : false,
-  "_shards" : {
-    "total" : 1,
-    "successful" : 1,
-    "skipped" : 0,
-    "failed" : 0
-  },
-  "hits" : {
-    "total" : 3,
-    "max_score" : 0.12503365,
-    "hits" : [
+  "_index" : "tp_elastic_mq",
+  "_type" : "_doc",
+  "_id" : "1",
+  "matched" : true,
+  "explanation" : {
+    "value" : 0.9806374,
+    "description" : "sum of:",
+    "details" : [
       {
-        "_shard" : "[tp_elastic_mq][0]",
-        "_node" : "YgaDyGWxQ86eKKynrH5QdQ",
-        "_index" : "tp_elastic_mq",
-        "_type" : "_doc",
-        "_id" : "3",
-        "_score" : 0.12503365,
-        "_source" : {
-          "app_name" : "draw figure"
-        },
-        "_explanation" : {
-          "value" : 0.12503365,
-          "description" : "weight(app_name:draw in 2) [PerFieldSimilarity], result of:",
-          "details" : [
-            {
-              "value" : 0.12503365,
-              "description" : "score(doc=2,freq=1.0 = termFreq=1.0\n), product of:",
-              "details" : [
-                {
-                  "value" : 0.105360515,
-                  "description" : "idf, computed as log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5)) from:",
-                  "details" : [
-                    {
-                      "value" : 4.0,
-                      "description" : "docFreq",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 4.0,
-                      "description" : "docCount",
-                      "details" : [ ]
-                    }
-                  ]
-                },
-                {
-                  "value" : 1.186722,
-                  "description" : "tfNorm, computed as (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength)) from:",
-                  "details" : [
-                    {
-                      "value" : 1.0,
-                      "description" : "termFreq=1.0",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 1.2,
-                      "description" : "parameter k1",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 0.75,
-                      "description" : "parameter b",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 3.25,
-                      "description" : "avgFieldLength",
-                      "details" : [ ]
-                    },
-                    {
-                      "value" : 2.0,
-                      "description" : "fieldLength",
-                      "details" : [ ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+        "value" : 0.11750763,
+        "description" : "weight(app_name:draw in 0) [PerFieldSimilarity], result of:",
+        "details" : [
+          {
+            "value" : 0.11750763,
+            "description" : "score(freq=1.0), product of:",
+            "details" : [
+              {
+                "value" : 2.2,
+                "description" : "boost",
+                "details" : [ ]
+              },
+              {
+                "value" : 0.13353139,
+                "description" : "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
+                "details" : [
+                  {
+                    "value" : 3,
+                    "description" : "n, number of documents containing term",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 3,
+                    "description" : "N, total number of documents with field",
+                    "details" : [ ]
+                  }
+                ]
+              },
+              {
+                "value" : 0.4,
+                "description" : "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:",
+                "details" : [
+                  {
+                    "value" : 1.0,
+                    "description" : "freq, occurrences of term within document",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 1.2,
+                    "description" : "k1, term saturation parameter",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 0.75,
+                    "description" : "b, length normalization parameter",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 4.0,
+                    "description" : "dl, length of field",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 3.0,
+                    "description" : "avgdl, average length of field",
+                    "details" : [ ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "value" : 0.86312973,
+        "description" : "weight(app_name:art in 0) [PerFieldSimilarity], result of:",
+        "details" : [
+          {
+            "value" : 0.86312973,
+            "description" : "score(freq=1.0), product of:",
+            "details" : [
+              {
+                "value" : 2.2,
+                "description" : "boost",
+                "details" : [ ]
+              },
+              {
+                "value" : 0.98082924,
+                "description" : "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
+                "details" : [
+                  {
+                    "value" : 1,
+                    "description" : "n, number of documents containing term",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 3,
+                    "description" : "N, total number of documents with field",
+                    "details" : [ ]
+                  }
+                ]
+              },
+              {
+                "value" : 0.4,
+                "description" : "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:",
+                "details" : [
+                  {
+                    "value" : 1.0,
+                    "description" : "freq, occurrences of term within document",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 1.2,
+                    "description" : "k1, term saturation parameter",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 0.75,
+                    "description" : "b, length normalization parameter",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 4.0,
+                    "description" : "dl, length of field",
+                    "details" : [ ]
+                  },
+                  {
+                    "value" : 3.0,
+                    "description" : "avgdl, average length of field",
+                    "details" : [ ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   }
 }
+
 // end::dml-fts-match-query-OR-explain-result[]
 
 #### AND
