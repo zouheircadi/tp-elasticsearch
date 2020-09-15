@@ -291,7 +291,7 @@ GET /tp_elastic_gstore/_search
     {
       "date_histogram": {
         "field": "last_updated",
-        "interval": "quarter"
+        "calendar_interval": "quarter"
       }
     }
   }

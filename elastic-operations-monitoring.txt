@@ -103,7 +103,7 @@ elasticsearch.hosts: ["http://localhost:10200","http://localhost:20200"]
 PUT _cluster/settings
 {
   "persistent": {
-    "xpack.monitoring.collection.enabled": false/elastic-ops-5-capacity-planning.adoc
+    "xpack.monitoring.collection.enabled": false
   }
 }
 // end::elastic-ops-monitoring-kibana-disable-data-collection[]

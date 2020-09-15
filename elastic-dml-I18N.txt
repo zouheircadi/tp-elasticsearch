@@ -160,6 +160,37 @@ PUT tp_elastic_i18n_per_idx_es
 // end::dml-I18N-per-index-create-index-es[]
 
 
+// tag::dml-I18N-per-index-add-data-en[]
+POST tp_elastic_i18n_per_idx_en/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Photo Editor & ScrapBook", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN","price" : 0.0, "last_updated" : "2018-01-06T23:00:00.000Z", "content_rating" : "Everyone","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{ "app_name" : "QR Code Reader", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2016-03-15T23:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.0}
+{ "index": { "_id": 4 }}
+{ "app_name" : "SHAREit - Transfer & Share", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2018-07-29T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+// end::dml-I18N-per-index-add-data-en[]
+
+// tag::dml-I18N-per-index-add-data-es[]
+POST tp_elastic_i18n_per_idx_es/_bulk
+{"index": { "_id": 1 }}
+{"app_name" : "Editor de fotos & álbum de fotos", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN","price" : 0.0, "last_updated" : "2018-01-06T23:00:00.000Z", "content_rating" : "Everyone","rating" : 4.1}
+{"index": { "_id": 2 }}
+{"app_name" : "Lector de código QR", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2016-03-15T23:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.0}
+{ "index": { "_id": 4 }}
+{"app_name" : "SHAREit - Transfiere y comparte", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2018-07-29T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+// end::dml-I18N-per-index-add-data-es[]
+
+// tag::dml-I18N-per-index-add-data-fr[]
+POST tp_elastic_i18n_per_idx_fr/_bulk
+{ "index": { "_id": 1 }}
+{"app_name" : "Editeur de photo & album photo", "type" : "Free", "genres" : "Art & Design", "category" : "ART_AND_DESIGN","price" : 0.0, "last_updated" : "2018-01-06T23:00:00.000Z", "content_rating" : "Everyone","rating" : 4.1}
+{ "index": { "_id": 2 }}
+{"app_name" : "Lecteur de QR code","type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2016-03-15T23:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.0}
+{ "index": { "_id": 4 }}
+{"app_name" : "SHAREit - Transférer et partager", "type" : "Free", "genres" : "Tools", "category" : "TOOLS", "price" : 0.0, "last_updated" : "2018-07-29T22:00:00.000Z", "content_rating" : "Everyone", "rating" : 4.6}
+// end::dml-I18N-per-index-add-data-fr[]
+
+
 // tag::dml-I18N-per-index-query-most-field-with-boost[]
 GET /tp_elastic_i18n_per_idx_*/_search
 {
