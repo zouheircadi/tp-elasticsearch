@@ -442,3 +442,189 @@ La sortie devrait être comme indiqué ci-dessous. Le token REPUBLic passe l'ana
   ]
 }
 // end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-1-analyze-result[]
+
+
+
+== Partial matching avec le type natif type_as_you_search
+
+- En vous aidant de la documentation en ligne[{url-es-doc-native-search-as-you-type}], créez un index permettant une recherche de type complétion automatique. Vous l'appellerez tp_elastic_pm4
+
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-delete-if-exists[]
+DELETE tp_elastic_pm4
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-delete-if-exists[]
+
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-create-index[]
+PUT /tp_elastic_pm4
+{
+  "mappings":
+  {
+      "properties" :
+      {
+        "code" :
+        {
+          "type" : "keyword"
+        },
+        "country" :
+        {
+          "type" : "text",
+          "fields":
+          {
+            "keyword":
+            {
+              "type": "keyword"
+            },
+            "ac":
+            {
+              "type": "search_as_you_type"
+            }
+          }
+        }
+      }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-create-index[]
+
+
+- Chargez les données dans l’index nouvellement créé.
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-load-data[]
+POST /tp_elastic_pm4/_bulk
+// ... data à indexer au format NDJSON
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-load-data[]
+
+- Tester le nouvel index en cherchant le token “rep”
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-1[]
+GET tp_elastic_pm4/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "rep",
+      "type": "bool_prefix",
+      "fields": [
+        "country.ac",
+        "country.ac._2gram",
+        "country.ac._3gram"
+      ]
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-1[]
+
+- Testez le nouvel index en cherchant le token "REpublic co"
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-2[]
+GET tp_elastic_pm4/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "REpublic co",
+      "type": "bool_prefix",
+      "fields": [
+        "country.ac",
+        "country.ac._2gram",
+        "country.ac._3gram"
+      ]
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-2[]
+
+
+- Faites la requête sur la chaîne "REpublic co" avec l'index précédent (tp_elastic_pm3)
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-3[]
+GET tp_elastic_pm3/_search
+{
+  "query":
+  {
+    "match": {
+      "country.autocomplete": "REpublic co"
+    }
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-3[]
+
+- Que pouvez vous en conclure ?
+
+Le meilleur moyen de comprendre la différence entre les deux requêtes est de faire un explain pour décomposer le score
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-3-explain[]
+GET tp_elastic_pm3/_explain/PZrvbHQB4_oP9wdSBP_t //<1>
+{
+  "query": {
+    "match": {
+      "country.ac": "REpublic co"
+    }
+  }
+}
+
+<1> : identifiant récupéré dans les requêtes précédentes car il est généré.
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-3-explain[]
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-3-score[]
+{
+  "_index" : "tp_elastic_pm3",
+  "_type" : "_doc",
+  "_id" : "PZrvbHQB4_oP9wdSBP_t",
+  "matched" : true,
+  "explanation" : {
+    "value" : 2.111922,
+    "description" : "sum of:",
+    "details" : [
+      {
+        "value" : 2.111922,
+        "description" : "weight(country.ac:republic in 53) [PerFieldSimilarity], result of:",
+        "details" : [...]
+      }
+    ]
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm3-test-query-3-score[]
+
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-2-explain[]
+GET tp_elastic_pm4/_explain/Jn3FoXQBOBJWhn6dfOUQ //<1>
+{
+  "query": {
+    "multi_match": {
+      "query": "REpublic co",
+      "type": "bool_prefix",
+      "fields": [
+        "country.ac",
+        "country.autocomplete._2gram",
+        "country.autocomplete._3gram"
+      ]
+    }
+  }
+}
+
+<1> : identifiant récupéré dans les requêtes précédentes car il est généré.
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-2-explain[]
+
+// tag::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-2-score[]
+{
+  "_index" : "tp_elastic_pm4",
+  "_type" : "_doc",
+  "_id" : "Jn3FoXQBOBJWhn6dfOUQ",
+  "matched" : true,
+  "explanation" : {
+    "value" : 2.6667132,
+    "description" : "sum of:",
+    "details" : [
+      {
+        "value" : 1.6667132,
+        "description" : "weight(country.ac:republic in 45) [PerFieldSimilarity], result of:",
+        "details" : [...]
+      },
+      {
+        "value" : 1.0,
+        "description" : "ConstantScore(country.ac._index_prefix:co)",
+        "details" : [ ]
+      }
+    ]
+  }
+}
+// end::dml-partial-matching-match-phrase-prefix-custom-index-pm4-test-query-2-score[]
