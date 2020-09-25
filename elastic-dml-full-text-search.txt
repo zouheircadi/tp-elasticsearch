@@ -720,7 +720,6 @@ GET /tp_elastic_mf3/_search
       "query": "entertainment art",
       "fields": ["genres","app_name"],
       "tie_breaker": 0.3
-
     }
   }
 }
@@ -741,7 +740,6 @@ GET /tp_elastic_mf3/_search
       "type": "best_fields",
       "fields": ["genres^0.3","app_name^4"],
       "tie_breaker": 0.3
-
     }
   }
 }
